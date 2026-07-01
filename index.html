@@ -391,6 +391,33 @@ async function loadData() {
   }).filter(d => d.uzsakovas);
 }
 
+/* ── Name normalization ── */
+function normalizeCustomerKey(name) {
+  return name.trim().toLowerCase()
+    .replace(/[.,;]+$/, '')          // trailing punctuation
+    .replace(/\s+/g, ' ')
+    .replace(/k{1,2}il/g, 'kkil');  // kekila → kekkila
+}
+
+function canonicalizeNames(data) {
+  const freq = {};
+  data.forEach(d => {
+    if (!d.uzsakovas) return;
+    const key = normalizeCustomerKey(d.uzsakovas);
+    if (!freq[key]) freq[key] = {};
+    freq[key][d.uzsakovas] = (freq[key][d.uzsakovas] || 0) + 1;
+  });
+  // Pick most-frequent spelling as canonical
+  const canonical = {};
+  Object.entries(freq).forEach(([key, variants]) => {
+    canonical[key] = Object.entries(variants).sort((a, b) => b[1] - a[1])[0][0];
+  });
+  return data.map(d => ({
+    ...d,
+    uzsakovas: d.uzsakovas ? canonical[normalizeCustomerKey(d.uzsakovas)] : d.uzsakovas,
+  }));
+}
+
 /* ── KPIs ── */
 function renderKPIs(data) {
   const now = new Date();
@@ -804,6 +831,7 @@ function closeOverduePage() {
 
 /* ── Init ── */
 function init(data) {
+  data = canonicalizeNames(data);
   ALL_DATA = data;
   renderKPIs(data);
   renderMonthly(data);
