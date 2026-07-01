@@ -161,6 +161,19 @@ body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; co
 #loading { position: fixed; inset: 0; background: rgba(240,242,245,0.92); display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 700; color: #0A2342; z-index: 999; }
 .footer { text-align: center; font-size: 11px; color: #c7c7cc; padding: 0.75rem; }
 
+/* Orders + clarification side-by-side */
+.orders-layout { display: grid; grid-template-columns: 1fr 340px; gap: 1.1rem; align-items: start; }
+@media (max-width: 1200px) { .orders-layout { grid-template-columns: 1fr; } }
+.clarif-item { padding: 0.65rem 0; border-bottom: 1px solid #f0f2f5; }
+.clarif-item:last-child { border-bottom: none; }
+.clarif-btn {
+  font-family: 'Montserrat', sans-serif; font-size: 11px; font-weight: 700;
+  background: #2B6CB0; color: white; border: none; border-radius: 8px;
+  padding: 5px 13px; cursor: pointer; white-space: nowrap; flex-shrink: 0; margin-top: 5px;
+}
+.clarif-btn:hover { background: #1A4F80; }
+.clarif-btn:disabled { background: #c7c7cc; cursor: default; }
+
 /* Calendar overlay */
 #calendar-overlay { display: none; position: fixed; inset: 0; z-index: 500; background: #f0f2f5; flex-direction: column; overflow-y: auto; }
 #calendar-overlay.open { display: flex; }
@@ -212,15 +225,9 @@ body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; co
 
   <div class="kpi-row" id="kpi-row"></div>
 
-  <div class="grid-6040" style="margin-bottom:1.1rem">
-    <div class="card">
-      <div class="card-title">Užsakymai pagal mėnesį</div>
-      <div class="chart-wrap" style="height:210px"><canvas id="monthly-chart"></canvas></div>
-    </div>
-    <div class="card">
-      <div class="card-title">Užsakymų dienos</div>
-      <div class="chart-wrap" style="height:210px"><canvas id="dow-chart"></canvas></div>
-    </div>
+  <div class="card" style="margin-bottom:1.1rem">
+    <div class="card-title">Užsakymai pagal mėnesį</div>
+    <div class="chart-wrap" style="height:210px"><canvas id="monthly-chart"></canvas></div>
   </div>
 
   <div class="grid-6040" style="margin-bottom:1.1rem">
@@ -274,46 +281,57 @@ body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; co
     </div>
   </div>
 
-  <div class="card">
-    <div class="card-title">
-      Užsakymų lentelė
-      <span id="table-count" class="card-title-sub"></span>
+  <div class="orders-layout">
+    <div class="card">
+      <div class="card-title">
+        Užsakymų lentelė
+        <span id="table-count" class="card-title-sub"></span>
+      </div>
+      <div class="filter-bar">
+        <input type="text" id="srch" placeholder="Klientas, produktas, užs. nr..." oninput="applyFilter()">
+        <select id="sf-status" onchange="applyFilter()">
+          <option value="pending">Neįvykdyti</option>
+          <option value="">Visi</option>
+          <option value="Gauta">Gauta</option>
+          <option value="Priimta">Priimta</option>
+          <option value="Vykdoma">Vykdoma</option>
+          <option value="Pristatyta">Pristatyta</option>
+          <option value="Išsiųsta">Išsiųsta</option>
+          <option value="Atšaukta">Atšaukta</option>
+        </select>
+        <select id="sf-product" onchange="applyFilter()">
+          <option value="">Visi produktai</option>
+        </select>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Užsakyta</th>
+              <th>Krovimas</th>
+              <th>Produktas</th>
+              <th style="text-align:right">m³</th>
+              <th>Klientas</th>
+              <th>Užs. nr.</th>
+              <th>Būsena</th>
+              <th>Transportas</th>
+              <th>Laukia</th>
+              <th>Komentaras</th>
+            </tr>
+          </thead>
+          <tbody id="orders-tbody"></tbody>
+        </table>
+      </div>
     </div>
-    <div class="filter-bar">
-      <input type="text" id="srch" placeholder="Klientas, produktas, užs. nr..." oninput="applyFilter()">
-      <select id="sf-status" onchange="applyFilter()">
-        <option value="pending">Neįvykdyti</option>
-        <option value="">Visi</option>
-        <option value="Gauta">Gauta</option>
-        <option value="Priimta">Priimta</option>
-        <option value="Vykdoma">Vykdoma</option>
-        <option value="Pristatyta">Pristatyta</option>
-        <option value="Išsiųsta">Išsiųsta</option>
-        <option value="Atšaukta">Atšaukta</option>
-      </select>
-      <select id="sf-product" onchange="applyFilter()">
-        <option value="">Visi produktai</option>
-      </select>
-    </div>
-    <div style="overflow-x:auto">
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Užsakyta</th>
-            <th>Krovimas</th>
-            <th>Produktas</th>
-            <th style="text-align:right">m³</th>
-            <th>Klientas</th>
-            <th>Užs. nr.</th>
-            <th>Būsena</th>
-            <th>Transportas</th>
-            <th>Laukia</th>
-            <th>Komentaras</th>
-          </tr>
-        </thead>
-        <tbody id="orders-tbody"></tbody>
-      </table>
+
+    <div class="card" id="clarif-card" style="display:none">
+      <div class="card-title">
+        Reikalingas tikslinimas
+        <span class="card-title-sub" id="clarif-count"></span>
+      </div>
+      <p style="font-size:11px;color:#8e8e93;margin-bottom:0.85rem;line-height:1.5">Neįvykdyti užsakymai, kurių kiekis (m³) nenustatytas. Patikslinkite komentarą Google Sheets, tada spauskite <strong>Patvirtinti</strong>.</p>
+      <div id="clarif-list"></div>
     </div>
   </div>
 
@@ -420,6 +438,12 @@ const DOW_LT   = ['Pir','Ant','Tre','Ket','Pen','Šeš','Sek'];
 const COLORS   = ['#2B6CB0','#1A7A4A','#D97706','#6B46C1','#C0392B','#0F7870','#C47A00','#AEADB3'];
 
 let ALL_DATA = [];
+let _charts = {};
+function mkChart(id, config) {
+  if (_charts[id]) { _charts[id].destroy(); }
+  _charts[id] = new Chart(document.getElementById(id), config);
+  return _charts[id];
+}
 
 function parseCSVRow(row) {
   const res = []; let cur = '', q = false;
@@ -461,8 +485,8 @@ function calcM3(rec) {
   const bbMatch = komUp.match(/(\d+)\s*BB/);
   if (bbMatch) return parseFloat(bbMatch[1]) * 1.5;
 
-  // Fixed-volume products: 1 truck = 72 m³
-  if (prod === 'premium' || prod.startsWith('extra') || prod === 'medium') return 72;
+  // Fixed-volume products: 1 truck = 72 m³ (LT: Ekstra = Extra)
+  if (/^(premium|extra|ekstra|medium)/.test(prod)) return 72;
 
   // Mix: parse from comment
   if (prod === 'mix') {
@@ -506,9 +530,10 @@ async function loadData() {
       uzsakymo_nr:   v[5]  || '',
       busena:        v[6]  || '',
       transportas:   v[7]  || '',
-      komentaras:    v[8]  || '',
+      // v[8] = m3 stulpelis (skaičiuojamas programiškai, nenaudojamas)
+      komentaras:    v[9]  || '',
     };
-  }).filter(d => d.uzsakovas);
+  }).filter(d => d.uzsakovas && /^\d+$/.test(d.seka));
 }
 
 /* ── Name normalization ── */
@@ -586,7 +611,7 @@ function renderMonthly(data) {
   const months = Object.keys(counts).sort().slice(-18);
   const labels = months.map(m => MONTH_LT[parseInt(m.split('-')[1]) - 1] + " '" + m.slice(2, 4));
 
-  new Chart(document.getElementById('monthly-chart'), {
+  mkChart('monthly-chart', {
     type: 'bar',
     data: {
       labels,
@@ -603,30 +628,6 @@ function renderMonthly(data) {
   });
 }
 
-/* ── Day of week chart ── */
-function renderDOW(data) {
-  const counts = [0,0,0,0,0,0,0];
-  data.forEach(d => {
-    const dt = parseDate(d.uzsakymo_data);
-    if (!dt) return;
-    counts[(dt.getDay() + 6) % 7]++;
-  });
-  new Chart(document.getElementById('dow-chart'), {
-    type: 'bar',
-    data: {
-      labels: DOW_LT,
-      datasets: [{ data: counts, backgroundColor: counts.map((_,i) => i<5 ? 'rgba(43,108,176,0.75)' : 'rgba(174,173,179,0.45)'), borderWidth: 0, borderRadius: 3 }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { ticks: { font: { size: 12, family: "'Montserrat'" } }, grid: { display: false } },
-        y: { ticks: { font: { size: 10, family: "'Montserrat'" } }, grid: { color: 'rgba(0,0,0,0.04)' } }
-      }
-    }
-  });
-}
 
 /* ── Customer ranking ── */
 function renderCustomers(data) {
@@ -667,7 +668,7 @@ function renderProducts(data) {
     cntmap[d.produktas] = (cntmap[d.produktas] || 0) + 1;
   });
   const s = Object.entries(m3map).sort((a,b)=>b[1]-a[1]);
-  new Chart(document.getElementById('product-chart'), {
+  mkChart('product-chart', {
     type: 'bar', indexAxis: 'y',
     data: {
       labels: s.map(e => e[0]),
@@ -692,7 +693,7 @@ function renderTransport(data) {
   const c = {};
   data.forEach(d => { const t = d.transportas||'Nenurodyta'; c[t]=(c[t]||0)+1; });
   const s = Object.entries(c).sort((a,b)=>b[1]-a[1]);
-  new Chart(document.getElementById('transport-chart'), {
+  mkChart('transport-chart', {
     type: 'doughnut',
     data: { labels: s.map(e=>e[0]), datasets: [{ data: s.map(e=>e[1]), backgroundColor: s.map((_,i)=>COLORS[i%COLORS.length]), borderWidth:2, borderColor:'white' }] },
     options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:true, position:'right', labels:{font:{size:11,family:"'Montserrat'"},boxWidth:12} } } }
@@ -703,6 +704,7 @@ function renderTransport(data) {
 function setupFilters(data) {
   const products = [...new Set(data.map(d=>d.produktas).filter(Boolean))].sort();
   const pf = document.getElementById('sf-product');
+  pf.innerHTML = '<option value="">Visi produktai</option>';
   products.forEach(p => { const o=document.createElement('option'); o.value=p; o.textContent=p; pf.appendChild(o); });
 }
 
@@ -1163,13 +1165,80 @@ function closeCalendar() {
   document.body.style.overflow = '';
 }
 
+/* ── Clarification panel ── */
+function renderClarification(data) {
+  const unclear = data.filter(d => isPending(d) && calcM3(d) === null);
+  const card = document.getElementById('clarif-card');
+  document.getElementById('clarif-count').textContent = unclear.length ? unclear.length + ' užsakymų' : '';
+
+  if (!unclear.length) { card.style.display = 'none'; return; }
+  card.style.display = '';
+
+  document.getElementById('clarif-list').innerHTML = unclear.map(d => `
+    <div class="clarif-item" id="ci-${d.seka}">
+      <div style="display:flex;align-items:flex-start;gap:0.5rem">
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:700;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${d.uzsakovas || '—'}</div>
+          <div style="font-size:11px;color:#2B6CB0;font-weight:600;margin-top:1px">${d.produktas || '—'}</div>
+          <div style="font-size:11px;color:#6e6e73;margin-top:1px">Krovimas: <strong>${d.krovimo_data || '—'}</strong></div>
+          ${d.komentaras
+            ? `<div style="font-size:10.5px;color:#8e8e93;margin-top:2px;font-style:italic" title="${d.komentaras}">"${d.komentaras.length > 45 ? d.komentaras.substring(0, 45) + '…' : d.komentaras}"</div>`
+            : `<div style="font-size:10.5px;color:#c7c7cc;margin-top:2px">— komentaro nėra —</div>`}
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-size:10px;color:#8e8e93;margin-bottom:4px">#${d.seka}</div>
+          <button class="clarif-btn" id="cb-${d.seka}" onclick="confirmOrder('${d.seka}', this)">Patvirtinti</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+async function confirmOrder(seka, btn) {
+  const orig = btn.textContent;
+  btn.textContent = '↻ Tikrinama…';
+  btn.disabled = true;
+  try {
+    const fresh = canonicalizeNames(await loadData());
+    ALL_DATA = fresh;
+    renderKPIs(fresh);
+    renderMonthly(fresh);
+    renderCustomers(fresh);
+    renderProducts(fresh);
+    renderTransport(fresh);
+    setupFilters(fresh);
+    initCustomerTable(fresh);
+    renderTable(fresh);
+    renderActivity(fresh);
+    renderClarification(fresh);
+
+    const order = fresh.find(d => d.seka === seka);
+    if (order && calcM3(order) === null) {
+      // Still unclear — restore button with feedback
+      const stillBtn = document.getElementById('cb-' + seka);
+      if (stillBtn) {
+        stillBtn.textContent = 'Dar nepatikslinta';
+        stillBtn.style.background = '#D97706';
+        stillBtn.disabled = false;
+        setTimeout(() => {
+          if (stillBtn) { stillBtn.textContent = orig; stillBtn.style.background = ''; }
+        }, 2500);
+      }
+    }
+    // If resolved: renderClarification already removed it from the list
+  } catch(e) {
+    btn.textContent = 'Klaida!';
+    btn.style.background = '#C0392B';
+    btn.disabled = false;
+    setTimeout(() => { btn.textContent = orig; btn.style.background = ''; }, 2500);
+  }
+}
+
 /* ── Init ── */
 function init(data) {
   data = canonicalizeNames(data);
   ALL_DATA = data;
   renderKPIs(data);
   renderMonthly(data);
-  renderDOW(data);
   renderCustomers(data);
   renderProducts(data);
   renderTransport(data);
@@ -1177,6 +1246,7 @@ function init(data) {
   initCustomerTable(data);
   renderTable(data);
   renderActivity(data);
+  renderClarification(data);
   document.getElementById('footer').textContent =
     'Atnaujinta: ' + new Date().toLocaleString('lt-LT', { dateStyle: 'short', timeStyle: 'short' }) +
     ' · Atsinaujina kas 5 min.';
