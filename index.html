@@ -71,12 +71,12 @@ body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; co
 .b-atsaukta   { background: #f2f2f7; color: #8e8e93; text-decoration: line-through; }
 .b-default    { background: #f2f2f7; color: #6e6e73; }
 
-/* Overdue overlay */
-#overdue-overlay {
+/* Overdue / Pending overlays */
+#overdue-overlay, #pending-overlay {
   display: none; position: fixed; inset: 0; z-index: 500;
   background: #f0f2f5; flex-direction: column; overflow-y: auto;
 }
-#overdue-overlay.open { display: flex; }
+#overdue-overlay.open, #pending-overlay.open { display: flex; }
 .ov-header {
   background: #8B1A1A; color: white;
   padding: 1rem 2rem; display: flex; align-items: center; gap: 1rem;
@@ -350,6 +350,36 @@ body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; co
   </div>
 </div>
 
+<!-- Pending overlay -->
+<div id="pending-overlay">
+  <div class="ov-header" style="background:#7A5200">
+    <button class="ov-back" onclick="closePendingPage()">← Atgal</button>
+    <span class="ov-title">Neįvykdyti užsakymai</span>
+    <span class="ov-count" id="pend-count"></span>
+  </div>
+  <div class="ov-body">
+    <div style="overflow-x:auto">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Užsakyta</th>
+            <th>Krovimas</th>
+            <th>Laukia</th>
+            <th>Produktas</th>
+            <th>Klientas</th>
+            <th>Užs. nr.</th>
+            <th>Būsena</th>
+            <th>Transportas</th>
+            <th>Komentaras</th>
+          </tr>
+        </thead>
+        <tbody id="pending-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
 <!-- Calendar overlay -->
 <div id="calendar-overlay">
   <div class="ov-header" style="background:#1a3a5c;gap:0.75rem">
@@ -502,7 +532,7 @@ function renderKPIs(data) {
 
   document.getElementById('kpi-row').innerHTML = `
     <div class="kpi-card c-blue"><div class="kpi-label">Viso užsakymų</div><div class="kpi-value">${data.length}</div><div class="kpi-sub">Visų laikų</div></div>
-    <div class="kpi-card c-amber"><div class="kpi-label">Neįvykdyta</div><div class="kpi-value">${pending}</div><div class="kpi-sub">Laukia vykdymo</div></div>
+    <div class="kpi-card c-amber clickable" onclick="openPendingPage()"><div class="kpi-label">Neįvykdyta</div><div class="kpi-value">${pending}</div><div class="kpi-sub">Spustelėk peržiūrėti</div></div>
     <div class="kpi-card c-red clickable" onclick="openOverduePage()"><div class="kpi-label">Vėluoja ⚠️</div><div class="kpi-value">${overdue}</div><div class="kpi-sub">Spustelėk peržiūrėti</div></div>
     <div class="kpi-card c-green"><div class="kpi-label">Šiandien kroviniai</div><div class="kpi-value">${todayLoad}</div><div class="kpi-sub">${today}</div></div>
     <div class="kpi-card c-purple clickable" onclick="openCalendar()"><div class="kpi-label">Šią savaitę</div><div class="kpi-value">${thisWeekN}</div><div class="kpi-sub">Spustelėk · kalendorius</div></div>
@@ -886,6 +916,51 @@ function openOverduePage() {
 
 function closeOverduePage() {
   document.getElementById('overdue-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+/* ── Pending page ── */
+function openPendingPage() {
+  const now = new Date();
+  const pending = ALL_DATA.filter(isPending)
+    .map(d => ({ ...d, daysWaiting: daysBetween(parseDate(d.uzsakymo_data), now) }))
+    .sort((a, b) => {
+      // Overdue first, then by krovimo_data asc (soonest first)
+      const aOd = isOverdue(a), bOd = isOverdue(b);
+      if (aOd !== bOd) return aOd ? -1 : 1;
+      return (a.krovimo_data || '9999').localeCompare(b.krovimo_data || '9999');
+    });
+
+  document.getElementById('pend-count').textContent = pending.length + ' užsakymų';
+  document.getElementById('pending-tbody').innerHTML = pending.map(d => {
+    const od = isOverdue(d);
+    const w  = d.daysWaiting;
+    const wCls = w === null ? '' : w <= 5 ? 'db-ok' : w <= 14 ? 'db-warn' : 'db-alert';
+    const wHtml = w !== null ? `<span class="days-badge ${wCls}">${w}d.</span>` : '—';
+    const lateDays = od ? daysBetween(parseDate(d.krovimo_data), now) : null;
+    const krovHtml = od
+      ? `<span style="font-weight:700;color:#C0392B">${d.krovimo_data}</span> <span class="days-badge db-alert">+${lateDays}d.</span>`
+      : (d.krovimo_data || '—');
+    return `<tr${od ? ' class="overdue"' : ''}>
+      <td style="color:#8e8e93;font-size:11px">${d.seka}</td>
+      <td style="white-space:nowrap;font-size:12px">${d.uzsakymo_data || '—'}</td>
+      <td style="white-space:nowrap;font-size:12px">${krovHtml}</td>
+      <td>${wHtml}</td>
+      <td><strong>${d.produktas || '—'}</strong></td>
+      <td style="font-weight:600;white-space:nowrap">${d.uzsakovas || '—'}</td>
+      <td style="font-size:11px;color:#8e8e93">${d.uzsakymo_nr || '—'}</td>
+      <td>${badge(d.busena)}</td>
+      <td style="font-size:11px">${d.transportas || '—'}</td>
+      <td style="font-size:11px;color:#8e8e93;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${d.komentaras || ''}">${d.komentaras || ''}</td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="10" style="text-align:center;padding:2rem;color:#8e8e93">Nėra neįvykdytų užsakymų</td></tr>';
+
+  document.getElementById('pending-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closePendingPage() {
+  document.getElementById('pending-overlay').classList.remove('open');
   document.body.style.overflow = '';
 }
 
