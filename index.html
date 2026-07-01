@@ -552,7 +552,7 @@ function normalizeCustomerKey(name) {
   if (n.startsWith('zibu'))                                                         return 'zibu';       // Zibu Vents, Zibu Ventspils
   if (/^r[eė]kyva/.test(n))                                                        return 'rekyva';     // Rekyva = Rėkyva
   if (/^b-?peat/.test(n))                                                           return 'bpeat';      // B-peat → Bpeat
-  if (n.startsWith('projar') || n.includes('sustratos integrales'))                return 'projar';     // Projar = Sustratos Integrales
+  if (n.includes('sustratos integrales'))                                          return 'sustratos integrales s.l'; // "PROJAR / SUSTRATOS INTEGRALES" (per brūkšnelį) = SUSTRATOS INTEGRALES S.L; PROJAR lieka atskiras
   if (n.startsWith('a. bagdono') || n.startsWith('a.bagdono'))                      return 'a. bagdono'; // A. Bagdono geliu ukis
   if (/^sulink[ai]/.test(n))                                                        return 'sulinkiai';  // Sulinkai = Sulinkiai
 
@@ -561,7 +561,6 @@ function normalizeCustomerKey(name) {
 
 // Pageidaujami pavadinimai sulietoms grupėms (kai dažniausias variantas netinka)
 const DISPLAY_OVERRIDE = {
-  'projar': 'PROJAR',
   'a. bagdono': 'A. BAGDONO',
 };
 
