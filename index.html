@@ -439,7 +439,7 @@ function normalizeCustomerKey(name) {
   return name.trim().toLowerCase()
     .replace(/[.,;]+$/, '')          // trailing punctuation
     .replace(/\s+/g, ' ')
-    .replace(/k{1,2}il/g, 'kkil');  // kekila → kekkila
+    .replace(/k{1,2}(?:il|li)/g, 'kkil');  // kekila/kekkila/kekklia → kekkila
 }
 
 function canonicalizeNames(data) {
