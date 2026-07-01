@@ -536,13 +536,16 @@ function normalizeCustomerKey(name) {
     .replace(/\s+/g, ' ')
     .replace(/k{1,2}(?:il|li)/g, 'kkil');  // kekila/kekkila/kekklia → kekkila
 
-  if (n.startsWith('pindstr'))                                                      return 'pindstrup';  // PINDSTRUP/PINDSTRUB + sufiksai
+  if (/^pin[d]?str/.test(n))                                                        return 'pindstrup';  // PINDSTRUP/PINDSTRUB/PINSTRUP + sufiksai
   if (n.startsWith('treffex'))                                                      return 'treffex';    // Treffex Nurme, Treffex Kurena
   if (/^miksk?aar/.test(n))                                                         return 'mikskaar';   // Miksaar → Mikskaar
   if (n.startsWith('legro'))                                                        return 'legro';      // Legro LV → Legro
   if (n.startsWith('havita') || n.startsWith('hawita') || n.includes('cesvain') || n.includes('akniste')) return 'hawita'; // Havita AKN/CES/Akniste, Cesvaine
   if (/^hall?n/.test(n))                                                            return 'hallnas';    // Halnas → Hallnas
   if (/^com[a-z]*peat/.test(n))                                                     return 'compaqpeat'; // Compacpeat/Comaqpeat/Comapaqpeat + sufiksai
+  if (n.startsWith('zibu'))                                                         return 'zibu';       // Zibu Vents, Zibu Ventspils
+  if (/^r[eė]kyva/.test(n))                                                        return 'rekyva';     // Rekyva = Rėkyva
+  if (/^b-?peat/.test(n))                                                           return 'bpeat';      // B-peat → Bpeat
 
   return n;
 }
