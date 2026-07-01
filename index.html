@@ -186,6 +186,11 @@ body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; co
 .cal-o-cancelled{ background: #f2f2f7; color: #8e8e93; }
 .cal-more { font-size: 9px; color: #8e8e93; margin-top: 3px; }
 .cal-empty { font-size: 11px; color: #d1d1d6; margin-top: 6px; }
+.cal-cell.out-of-month { background: #f5f5f7; opacity: 0.35; pointer-events: none; }
+.cal-nav-btn { background: rgba(255,255,255,0.15); border: none; color: white; font-size: 22px; font-weight: 700; width: 36px; height: 36px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1; }
+.cal-nav-btn:hover { background: rgba(255,255,255,0.28); }
+.cal-sel { font-family: 'Montserrat', sans-serif; font-size: 14px; font-weight: 700; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 8px; padding: 5px 10px; cursor: pointer; outline: none; }
+.cal-sel option { background: #1a3a5c; color: white; }
 </style>
 </head>
 <body>
@@ -347,10 +352,22 @@ body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; co
 
 <!-- Calendar overlay -->
 <div id="calendar-overlay">
-  <div class="ov-header" style="background:#1a3a5c">
+  <div class="ov-header" style="background:#1a3a5c;gap:0.75rem">
     <button class="ov-back" onclick="closeCalendar()">← Atgal</button>
     <span class="ov-title">Krovinių kalendorius</span>
-    <span class="ov-count" id="cal-range"></span>
+    <div style="display:flex;align-items:center;gap:0.5rem;margin-left:auto">
+      <button class="cal-nav-btn" onclick="navigateCalendar(-1)">‹</button>
+      <select class="cal-sel" id="cal-month-sel" onchange="onCalSelChange()">
+        <option value="0">Sausis</option><option value="1">Vasaris</option>
+        <option value="2">Kovas</option><option value="3">Balandis</option>
+        <option value="4">Gegužė</option><option value="5">Birželis</option>
+        <option value="6">Liepa</option><option value="7">Rugpjūtis</option>
+        <option value="8">Rugsėjis</option><option value="9">Spalis</option>
+        <option value="10">Lapkritis</option><option value="11">Gruodis</option>
+      </select>
+      <select class="cal-sel" id="cal-year-sel" onchange="onCalSelChange()"></select>
+      <button class="cal-nav-btn" onclick="navigateCalendar(1)">›</button>
+    </div>
   </div>
   <div class="cal-body">
     <div class="cal-dow-row">
@@ -887,91 +904,121 @@ function getEaster(year) {
 function getLtHoliday(date) {
   const m = date.getMonth() + 1, d = date.getDate(), y = date.getFullYear();
   const fixed = {
-    '1-1':  'Naujieji metai',
-    '2-16': 'Valstybės atkūrimo d.',
-    '3-11': 'Nepriklausomybės d.',
-    '5-1':  'Darbo diena',
-    '6-24': 'Joninės',
-    '7-6':  'Valstybės diena',
-    '8-15': 'Žolinė',
-    '11-1': 'Visų Šventųjų d.',
-    '12-24':'Kūčios',
-    '12-25':'Kalėdos',
-    '12-26':'Kalėdos (II)',
+    '1-1': 'Naujieji metai', '2-16': 'Valstybės atkūrimo d.',
+    '3-11': 'Nepriklausomybės d.', '5-1': 'Darbo diena',
+    '6-24': 'Joninės', '7-6': 'Valstybės diena',
+    '8-15': 'Žolinė', '11-1': 'Visų Šventųjų d.',
+    '12-24': 'Kūčios', '12-25': 'Kalėdos', '12-26': 'Kalėdos (II)',
   };
-  const key = m + '-' + d;
-  if (fixed[key]) return fixed[key];
+  if (fixed[m + '-' + d]) return fixed[m + '-' + d];
   const easter = getEaster(y);
-  const easterD = d => { const e = new Date(easter); e.setDate(e.getDate() + d); return e; };
-  if (date.toDateString() === easter.toDateString())        return 'Velykos';
-  if (date.toDateString() === easterD(1).toDateString())   return 'Velykos (II)';
+  const shift  = n => { const e = new Date(easter); e.setDate(e.getDate() + n); return e; };
+  if (date.toDateString() === easter.toDateString())    return 'Velykos';
+  if (date.toDateString() === shift(1).toDateString()) return 'Velykos (II)';
   return null;
 }
 
 function toDateStr(d) { return d.toISOString().substring(0, 10); }
 
-function openCalendar() {
-  const now    = new Date();
+let calYear, calMonth;
+
+function renderCalendar(year, month) {
+  calYear = year; calMonth = month;
+  const now      = new Date();
   const todayStr = toDateStr(now);
 
-  // Current week Monday
-  const weekStart = new Date(now);
-  weekStart.setDate(weekStart.getDate() - ((now.getDay() + 6) % 7));
-  weekStart.setHours(0, 0, 0, 0);
+  // Sync selects
+  document.getElementById('cal-month-sel').value = month;
+  document.getElementById('cal-year-sel').value  = year;
 
-  // 3 weeks = 21 days
-  const days = Array.from({ length: 21 }, (_, i) => {
-    const d = new Date(weekStart); d.setDate(d.getDate() + i); return d;
-  });
-
-  // Orders indexed by krovimo_data
+  // Build order index by krovimo_data
   const byDate = {};
   ALL_DATA.forEach(d => {
     if (!d.krovimo_data || !/^\d{4}-\d{2}-\d{2}$/.test(d.krovimo_data)) return;
     (byDate[d.krovimo_data] = byDate[d.krovimo_data] || []).push(d);
   });
 
-  document.getElementById('cal-range').textContent =
-    days[0].toLocaleDateString('lt-LT') + ' – ' + days[20].toLocaleDateString('lt-LT');
+  // First day of month, find preceding Monday
+  const firstDay = new Date(year, month, 1);
+  const gridStart = new Date(firstDay);
+  gridStart.setDate(gridStart.getDate() - ((firstDay.getDay() + 6) % 7));
+
+  // 6 weeks = 42 cells
+  const cells = Array.from({ length: 42 }, (_, i) => {
+    const d = new Date(gridStart); d.setDate(d.getDate() + i); return d;
+  });
 
   let html = '';
-  days.forEach((d, i) => {
-    if (i > 0 && i % 7 === 0) html += '<div class="cal-week-gap"></div>';
-    const ds      = toDateStr(d);
-    const isToday = ds === todayStr;
-    const isPast  = ds < todayStr;
-    const dow     = (d.getDay() + 6) % 7;
-    const isWknd  = dow >= 5;
-    const holiday = getLtHoliday(d);
-    const orders  = byDate[ds] || [];
-    const showMonth = d.getDate() === 1 || i === 0;
+  cells.forEach(d => {
+    const ds       = toDateStr(d);
+    const inMonth  = d.getMonth() === month;
+    const isToday  = ds === todayStr;
+    const isPast   = ds < todayStr;
+    const dow      = (d.getDay() + 6) % 7;
+    const isWknd   = dow >= 5;
+    const holiday  = inMonth ? getLtHoliday(d) : null;
+    const orders   = inMonth ? (byDate[ds] || []) : [];
 
     const cls = ['cal-cell',
-      isToday  ? 'is-today'   : '',
-      isWknd   ? 'is-weekend' : '',
-      holiday  ? 'is-holiday' : '',
-      (isPast && !isToday) ? 'is-past' : '',
+      !inMonth              ? 'out-of-month' : '',
+      isToday               ? 'is-today'     : '',
+      isWknd                ? 'is-weekend'   : '',
+      holiday               ? 'is-holiday'   : '',
+      (isPast && !isToday)  ? 'is-past'      : '',
     ].filter(Boolean).join(' ');
 
-    const MAX = 4;
+    const MAX = 5;
     const orderHtml = orders.slice(0, MAX).map(o => {
-      const oc = o.busena === 'Atšaukta' ? 'cal-o-cancelled'
-               : (o.busena === 'Pristatyta' || o.busena === 'Išsiųsta') ? 'cal-o-done'
-               : isOverdue(o) ? 'cal-o-overdue'
-               : 'cal-o-pending';
+      const oc = o.busena === 'Atšaukta'
+        ? 'cal-o-cancelled'
+        : (o.busena === 'Pristatyta' || o.busena === 'Išsiųsta') ? 'cal-o-done'
+        : isOverdue(o) ? 'cal-o-overdue'
+        : 'cal-o-pending';
       return `<span class="cal-order ${oc}" title="${o.uzsakovas} · ${o.produktas} · ${o.busena}">${o.uzsakovas}</span>`;
     }).join('');
     const more = orders.length > MAX ? `<div class="cal-more">+${orders.length - MAX} dar</div>` : '';
 
     html += `<div class="${cls}">
       <div class="cal-day-num">${d.getDate()}</div>
-      ${showMonth ? `<div class="cal-day-month">${MONTH_LT[d.getMonth()]}</div>` : ''}
-      ${holiday   ? `<div class="cal-holiday-label">${holiday}</div>` : ''}
-      ${orders.length ? orderHtml + more : '<div class="cal-empty">—</div>'}
+      ${holiday ? `<div class="cal-holiday-label">${holiday}</div>` : ''}
+      ${inMonth && orders.length ? orderHtml + more : inMonth ? '<div class="cal-empty">—</div>' : ''}
     </div>`;
   });
 
   document.getElementById('cal-grid').innerHTML = html;
+}
+
+function navigateCalendar(dir) {
+  let m = calMonth + dir, y = calYear;
+  if (m < 0)  { m = 11; y--; }
+  if (m > 11) { m = 0;  y++; }
+  // Update year select if needed
+  const ySel = document.getElementById('cal-year-sel');
+  if (![...ySel.options].some(o => parseInt(o.value) === y)) {
+    const opt = document.createElement('option');
+    opt.value = y; opt.textContent = y; ySel.appendChild(opt);
+  }
+  renderCalendar(y, m);
+}
+
+function onCalSelChange() {
+  const y = parseInt(document.getElementById('cal-year-sel').value);
+  const m = parseInt(document.getElementById('cal-month-sel').value);
+  renderCalendar(y, m);
+}
+
+function openCalendar() {
+  const now = new Date();
+  // Populate year select around data range
+  const years = [...new Set(ALL_DATA.map(d => d.uzsakymo_data.substring(0, 4)).filter(y => /^\d{4}$/.test(y)))].map(Number).sort();
+  const minY  = Math.min(...years, now.getFullYear()) - 1;
+  const maxY  = Math.max(...years, now.getFullYear()) + 2;
+  const ySel  = document.getElementById('cal-year-sel');
+  ySel.innerHTML = '';
+  for (let y = maxY; y >= minY; y--) {
+    const opt = document.createElement('option'); opt.value = y; opt.textContent = y; ySel.appendChild(opt);
+  }
+  renderCalendar(now.getFullYear(), now.getMonth());
   document.getElementById('calendar-overlay').classList.add('open');
   document.body.style.overflow = 'hidden';
 }
