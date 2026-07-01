@@ -125,6 +125,18 @@ body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; co
 .db-warn  { background: #FEF3DA; color: #C47A00; }
 .db-alert { background: #fce9e7; color: #C0392B; }
 
+/* Expand row */
+.expand-row { display: none; }
+.expand-row.open { display: table-row; }
+.expand-row > td { padding: 0 !important; border-bottom: 2px solid #e5e5ea; }
+.expand-inner { background: #f8f9fb; padding: 0.6rem 1.2rem 0.8rem 2.5rem; }
+.expand-inner table { width: 100%; border-collapse: collapse; font-size: 11.5px; }
+.expand-inner th { font-size: 10px; font-weight: 700; color: #8e8e93; text-transform: uppercase; letter-spacing: 0.4px; padding: 3px 8px; border-bottom: 1px solid #e5e5ea; }
+.expand-inner td { padding: 4px 8px; border-bottom: 1px solid #f0f2f5; vertical-align: middle; }
+.expand-inner tr:last-child td { border-bottom: none; }
+.expand-inner tr.overdue td { background: #fff5f5; }
+.pend-toggle { cursor: pointer; display: inline-block; width: 16px; font-size: 10px; color: #2B6CB0; transition: transform 0.15s; }
+
 /* Rank table */
 .rank-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
 .rank-table td { padding: 5px 6px; border-bottom: 1px solid #f5f5f7; vertical-align: middle; }
@@ -588,8 +600,9 @@ function buildCustomerRows(data) {
     const lastDt = last ? parseDate(last) : null;
     const ago   = lastDt ? daysBetween(lastDt, now) : null;
     const products = [...new Set(c.orders.map(o => o.produktas).filter(Boolean))].sort().join(', ');
-    const pending  = c.orders.filter(isPending).length;
-    return { name: c.name, first, last, ago, count: c.orders.length, products, pending };
+    const pendingOrders = c.orders.filter(isPending).sort((a, b) => (a.krovimo_data || '').localeCompare(b.krovimo_data || ''));
+    const pending = pendingOrders.length;
+    return { name: c.name, first, last, ago, count: c.orders.length, products, pending, pendingOrders };
   });
 }
 
@@ -604,13 +617,45 @@ function renderCustomerTable(rows) {
   const now = new Date();
   document.getElementById('cust-tbody').innerHTML = f.map((r, i) => {
     const agoCls = r.ago === null ? '' : r.ago <= 30 ? 'db-ok' : r.ago <= 90 ? 'db-warn' : 'db-alert';
-    const agoHtml = r.ago !== null
-      ? `<span class="days-badge ${agoCls}">${r.ago}d.</span>`
-      : '—';
+    const agoHtml = r.ago !== null ? `<span class="days-badge ${agoCls}">${r.ago}d.</span>` : '—';
+
     const pendHtml = r.pending > 0
-      ? `<span style="font-weight:700;color:#C47A00">${r.pending}</span>`
+      ? `<span class="pend-toggle" id="pend-btn-${i}">▶</span>
+         <span onclick="togglePending(${i})" style="cursor:pointer;font-weight:700;color:#C47A00;text-decoration:underline dotted">${r.pending}</span>`
       : `<span style="color:#c7c7cc">0</span>`;
-    return `<tr>
+
+    const expandHtml = r.pending > 0 ? (() => {
+      const rows = r.pendingOrders.map(o => {
+        const od = isOverdue(o);
+        const late = od ? daysBetween(parseDate(o.krovimo_data), now) : null;
+        const lateHtml = late !== null ? `<span class="days-badge db-alert">+${late}d.</span>` : '';
+        return `<tr${od ? ' class="overdue"' : ''}>
+          <td style="color:#8e8e93">${o.seka}</td>
+          <td style="white-space:nowrap">${o.uzsakymo_data || '—'}</td>
+          <td style="white-space:nowrap;font-weight:600">${o.krovimo_data || '—'}</td>
+          <td>${lateHtml}</td>
+          <td><strong>${o.produktas || '—'}</strong></td>
+          <td>${badge(o.busena)}</td>
+          <td style="color:#8e8e93">${o.uzsakymo_nr || '—'}</td>
+          <td style="color:#8e8e93;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${o.komentaras || ''}">${o.komentaras || ''}</td>
+        </tr>`;
+      }).join('');
+      return `<tr id="expand-${i}" class="expand-row">
+        <td colspan="8">
+          <div class="expand-inner">
+            <table>
+              <thead><tr>
+                <th>#</th><th>Užsakyta</th><th>Krovimas</th><th>Vėl.</th>
+                <th>Produktas</th><th>Būsena</th><th>Užs. nr.</th><th>Komentaras</th>
+              </tr></thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>
+        </td>
+      </tr>`;
+    })() : '';
+
+    return `<tr onclick="togglePending(${i})" style="${r.pending > 0 ? 'cursor:pointer' : ''}">
       <td style="color:#8e8e93;font-size:11px">${i + 1}</td>
       <td style="font-weight:700">${r.name}</td>
       <td style="font-size:12px;color:#8e8e93">${r.first || '—'}</td>
@@ -619,8 +664,16 @@ function renderCustomerTable(rows) {
       <td style="font-weight:800;font-size:14px">${r.count}</td>
       <td style="font-size:11px;color:#6e6e73;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.products}">${r.products || '—'}</td>
       <td>${pendHtml}</td>
-    </tr>`;
+    </tr>${expandHtml}`;
   }).join('') || '<tr><td colspan="8" style="text-align:center;color:#8e8e93;padding:2rem">Nėra</td></tr>';
+}
+
+function togglePending(i) {
+  const row = document.getElementById('expand-' + i);
+  const btn = document.getElementById('pend-btn-' + i);
+  if (!row) return;
+  const open = row.classList.toggle('open');
+  if (btn) btn.style.transform = open ? 'rotate(90deg)' : '';
 }
 
 function sortCustomers(key) {
