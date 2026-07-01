@@ -29,9 +29,11 @@ body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; co
 .page-body { padding: 0 1.5rem 2rem; max-width: 1700px; margin: 0 auto; }
 
 /* KPI */
-.kpi-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.9rem; margin-bottom: 1.1rem; }
-@media (max-width: 1100px) { .kpi-row { grid-template-columns: repeat(3, 1fr); } }
+.kpi-row { display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.9rem; margin-bottom: 1.1rem; }
+@media (max-width: 1200px) { .kpi-row { grid-template-columns: repeat(3, 1fr); } }
 .kpi-card { background: white; border-radius: 12px; padding: 0.9rem 1.1rem; border-left: 4px solid; }
+.kpi-card.clickable { cursor: pointer; transition: transform 0.12s, box-shadow 0.12s; }
+.kpi-card.clickable:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.10); }
 .kpi-label { font-size: 10px; font-weight: 700; color: #6e6e73; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 4px; }
 .kpi-value { font-size: 30px; font-weight: 800; line-height: 1; letter-spacing: -1px; }
 .kpi-sub   { font-size: 11px; color: #8e8e93; margin-top: 3px; }
@@ -40,6 +42,7 @@ body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; co
 .kpi-card.c-green  { border-color: #1A7A4A; } .kpi-card.c-green  .kpi-value { color: #1A7A4A; }
 .kpi-card.c-red    { border-color: #C0392B; } .kpi-card.c-red    .kpi-value { color: #C0392B; }
 .kpi-card.c-navy   { border-color: #0A2342; } .kpi-card.c-navy   .kpi-value { color: #0A2342; }
+.kpi-card.c-purple { border-color: #6B46C1; } .kpi-card.c-purple .kpi-value { color: #6B46C1; }
 
 /* Cards */
 .card { background: white; border-radius: 14px; padding: 1.1rem 1.25rem; margin-bottom: 1.1rem; }
@@ -61,10 +64,33 @@ body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; co
 /* Status badge */
 .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 700; }
 .b-pristatyta { background: #e6f4ec; color: #1A7A4A; }
+.b-issista    { background: #ddf0e8; color: #0F6B3A; }
 .b-vykdoma    { background: #FEF3DA; color: #C47A00; }
 .b-priimta    { background: #E3EEF8; color: #1A4F80; }
 .b-gauta      { background: #E8F4F3; color: #0F7870; }
+.b-atsaukta   { background: #f2f2f7; color: #8e8e93; text-decoration: line-through; }
 .b-default    { background: #f2f2f7; color: #6e6e73; }
+
+/* Overdue overlay */
+#overdue-overlay {
+  display: none; position: fixed; inset: 0; z-index: 500;
+  background: #f0f2f5; flex-direction: column; overflow-y: auto;
+}
+#overdue-overlay.open { display: flex; }
+.ov-header {
+  background: #8B1A1A; color: white;
+  padding: 1rem 2rem; display: flex; align-items: center; gap: 1rem;
+  position: sticky; top: 0; z-index: 10;
+}
+.ov-back {
+  font-family: 'Montserrat', sans-serif; font-size: 13px; font-weight: 700;
+  background: rgba(255,255,255,0.15); border: none; color: white;
+  padding: 6px 14px; border-radius: 8px; cursor: pointer;
+}
+.ov-back:hover { background: rgba(255,255,255,0.25); }
+.ov-title { font-size: 20px; font-weight: 800; }
+.ov-count { font-size: 13px; opacity: 0.75; margin-left: auto; }
+.ov-body  { padding: 1.5rem; max-width: 1400px; width: 100%; margin: 0 auto; }
 
 /* Filter bar */
 .filter-bar { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 0.75rem; align-items: center; }
@@ -176,10 +202,12 @@ body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; co
       <select id="sf-status" onchange="applyFilter()">
         <option value="pending">Neįvykdyti</option>
         <option value="">Visi</option>
+        <option value="Gauta">Gauta</option>
         <option value="Priimta">Priimta</option>
         <option value="Vykdoma">Vykdoma</option>
-        <option value="Gauta">Gauta</option>
         <option value="Pristatyta">Pristatyta</option>
+        <option value="Išsiųsta">Išsiųsta</option>
+        <option value="Atšaukta">Atšaukta</option>
       </select>
       <select id="sf-product" onchange="applyFilter()">
         <option value="">Visi produktai</option>
@@ -218,6 +246,36 @@ body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; co
 
 <div class="footer" id="footer"></div>
 
+<!-- Overdue overlay page -->
+<div id="overdue-overlay">
+  <div class="ov-header">
+    <button class="ov-back" onclick="closeOverduePage()">← Atgal</button>
+    <span class="ov-title">Vėluojantys užsakymai</span>
+    <span class="ov-count" id="ov-count"></span>
+  </div>
+  <div class="ov-body">
+    <div style="overflow-x:auto">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Užsakyta</th>
+            <th>Krovimas</th>
+            <th>Vėluoja</th>
+            <th>Produktas</th>
+            <th>Klientas</th>
+            <th>Užs. nr.</th>
+            <th>Būsena</th>
+            <th>Transportas</th>
+            <th>Komentaras</th>
+          </tr>
+        </thead>
+        <tbody id="overdue-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
 <script>
 const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQkSb05g43mOWiI3PABzhHULN7jeF79C2tmYfxZ0UXCGygXXYJ-GMgmimdZZwTWLzPpuE5mzUGKoUqM/pub?gid=0&single=true&output=csv';
 
@@ -249,7 +307,8 @@ function daysBetween(a, b) {
   return Math.round((b - a) / 86400000);
 }
 
-function isPending(r) { return r.busena !== 'Pristatyta'; }
+const DONE_STATUSES = new Set(['Pristatyta', 'Išsiųsta', 'Atšaukta']);
+function isPending(r) { return !DONE_STATUSES.has(r.busena); }
 
 function isOverdue(r) {
   if (!isPending(r)) return false;
@@ -259,9 +318,11 @@ function isOverdue(r) {
 
 function badge(s) {
   const cls = s === 'Pristatyta' ? 'b-pristatyta'
-    : s === 'Vykdoma' ? 'b-vykdoma'
-    : s === 'Priimta' ? 'b-priimta'
-    : s === 'Gauta'   ? 'b-gauta'
+    : s === 'Išsiųsta' ? 'b-issista'
+    : s === 'Vykdoma'  ? 'b-vykdoma'
+    : s === 'Priimta'  ? 'b-priimta'
+    : s === 'Gauta'    ? 'b-gauta'
+    : s === 'Atšaukta' ? 'b-atsaukta'
     : 'b-default';
   return `<span class="badge ${cls}">${s || '—'}</span>`;
 }
@@ -290,14 +351,21 @@ async function loadData() {
 /* ── KPIs ── */
 function renderKPIs(data) {
   const now = new Date();
-  const thisM = now.toISOString().substring(0, 7);
   const today = now.toISOString().substring(0, 10);
-  const pending  = data.filter(isPending).length;
-  const todayLoad = data.filter(d => d.krovimo_data === today).length;
-  const thisMonthN = data.filter(d => d.uzsakymo_data.startsWith(thisM)).length;
-  const overdue  = data.filter(isOverdue).length;
+  const thisM = today.substring(0, 7);
 
-  const leads = data.filter(d => !isPending(d))
+  // Week start = last Monday
+  const weekStart = new Date(now);
+  weekStart.setDate(weekStart.getDate() - ((now.getDay() + 6) % 7));
+  const weekStartStr = weekStart.toISOString().substring(0, 10);
+
+  const pending     = data.filter(isPending).length;
+  const overdue     = data.filter(isOverdue).length;
+  const todayLoad   = data.filter(d => d.krovimo_data === today).length;
+  const thisMonthN  = data.filter(d => d.uzsakymo_data.startsWith(thisM)).length;
+  const thisWeekN   = data.filter(d => d.uzsakymo_data >= weekStartStr && d.uzsakymo_data <= today).length;
+
+  const leads = data.filter(d => d.busena === 'Pristatyta' || d.busena === 'Išsiųsta')
     .map(d => daysBetween(parseDate(d.uzsakymo_data), parseDate(d.krovimo_data)))
     .filter(x => x !== null && x >= 0 && x <= 60);
   const avgLead = leads.length ? Math.round(leads.reduce((a, b) => a + b, 0) / leads.length) : null;
@@ -305,9 +373,10 @@ function renderKPIs(data) {
   document.getElementById('kpi-row').innerHTML = `
     <div class="kpi-card c-blue"><div class="kpi-label">Viso užsakymų</div><div class="kpi-value">${data.length}</div><div class="kpi-sub">Visų laikų</div></div>
     <div class="kpi-card c-amber"><div class="kpi-label">Neįvykdyta</div><div class="kpi-value">${pending}</div><div class="kpi-sub">Laukia vykdymo</div></div>
-    <div class="kpi-card c-red"><div class="kpi-label">Vėluoja ⚠️</div><div class="kpi-value">${overdue}</div><div class="kpi-sub">Praleista krovimo data</div></div>
+    <div class="kpi-card c-red clickable" onclick="openOverduePage()"><div class="kpi-label">Vėluoja ⚠️</div><div class="kpi-value">${overdue}</div><div class="kpi-sub">Spustelėk peržiūrėti</div></div>
     <div class="kpi-card c-green"><div class="kpi-label">Šiandien kroviniai</div><div class="kpi-value">${todayLoad}</div><div class="kpi-sub">${today}</div></div>
-    <div class="kpi-card c-navy"><div class="kpi-label">Šio mėn. užsakymai</div><div class="kpi-value">${thisMonthN}</div><div class="kpi-sub">Vid. vykd.: ${avgLead !== null ? avgLead + ' d.' : '—'}</div></div>
+    <div class="kpi-card c-purple"><div class="kpi-label">Šią savaitę</div><div class="kpi-value">${thisWeekN}</div><div class="kpi-sub">nuo ${weekStartStr}</div></div>
+    <div class="kpi-card c-navy"><div class="kpi-label">Šio mėn.</div><div class="kpi-value">${thisMonthN}</div><div class="kpi-sub">Vid. vykd.: ${avgLead !== null ? avgLead + ' d.' : '—'}</div></div>
   `;
   document.getElementById('hdr-date').textContent = now.toLocaleDateString('lt-LT', { year: 'numeric', month: 'long', day: 'numeric' });
   document.getElementById('hdr-total').textContent = `${data.length} užsakymų iš viso`;
@@ -520,6 +589,37 @@ function renderActivity(data) {
       ${items(active)}
     </div>
   `;
+}
+
+/* ── Overdue page ── */
+function openOverduePage() {
+  const now = new Date();
+  const overdue = ALL_DATA.filter(isOverdue)
+    .map(d => ({ ...d, daysLate: daysBetween(parseDate(d.krovimo_data), now) }))
+    .sort((a, b) => b.daysLate - a.daysLate);
+
+  document.getElementById('ov-count').textContent = overdue.length + ' užsakymai';
+  document.getElementById('overdue-tbody').innerHTML = overdue.map(d => `
+    <tr class="overdue">
+      <td style="color:#8e8e93;font-size:11px">${d.seka}</td>
+      <td style="white-space:nowrap;font-size:12px">${d.uzsakymo_data || '—'}</td>
+      <td style="white-space:nowrap;font-size:12px;font-weight:700;color:#C0392B">${d.krovimo_data || '—'}</td>
+      <td><span class="days-badge db-alert">+${d.daysLate}d.</span></td>
+      <td><strong>${d.produktas || '—'}</strong></td>
+      <td style="font-weight:600;white-space:nowrap">${d.uzsakovas || '—'}</td>
+      <td style="font-size:11px;color:#8e8e93">${d.uzsakymo_nr || '—'}</td>
+      <td>${badge(d.busena)}</td>
+      <td style="font-size:11px">${d.transportas || '—'}</td>
+      <td style="font-size:11px;color:#8e8e93;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${d.komentaras || ''}">${d.komentaras || ''}</td>
+    </tr>`).join('') || '<tr><td colspan="10" style="text-align:center;padding:2rem;color:#8e8e93">Nėra vėluojančių užsakymų</td></tr>';
+
+  document.getElementById('overdue-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeOverduePage() {
+  document.getElementById('overdue-overlay').classList.remove('open');
+  document.body.style.overflow = '';
 }
 
 /* ── Init ── */
