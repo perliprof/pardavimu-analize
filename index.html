@@ -112,6 +112,10 @@ body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; co
   text-transform: uppercase; letter-spacing: 0.4px;
   padding: 5px 9px; border-bottom: 2px solid #f0f2f5; white-space: nowrap;
 }
+.data-table th.sortable { cursor: pointer; user-select: none; }
+.data-table th.sortable:hover { color: #2B6CB0; }
+.data-table th.sort-asc::after  { content: ' ↑'; color: #2B6CB0; }
+.data-table th.sort-desc::after { content: ' ↓'; color: #2B6CB0; }
 .data-table td { padding: 6px 9px; border-bottom: 1px solid #f5f5f7; vertical-align: middle; }
 .data-table tbody tr:hover { background: #f8f9fb; }
 .data-table tr.overdue td { background: #fff8f8; }
@@ -189,6 +193,33 @@ body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; co
       <div class="chart-wrap" style="height:155px"><canvas id="product-chart"></canvas></div>
       <div class="card-title" style="margin-top:1rem">Transportas</div>
       <div class="chart-wrap" style="height:115px"><canvas id="transport-chart"></canvas></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      Klientų sąrašas
+      <span class="card-title-sub" id="cust-table-count"></span>
+    </div>
+    <div class="filter-bar">
+      <input type="text" id="cust-srch" placeholder="Ieškoti kliento..." oninput="applyCustomerFilter()">
+    </div>
+    <div style="overflow-x:auto">
+      <table class="data-table" id="cust-table">
+        <thead>
+          <tr>
+            <th class="sortable" onclick="sortCustomers('rank')">#</th>
+            <th class="sortable" onclick="sortCustomers('name')">Klientas</th>
+            <th class="sortable" onclick="sortCustomers('first')">Pirmas užs.</th>
+            <th class="sortable sort-desc" onclick="sortCustomers('last')">Paskutinis užs.</th>
+            <th class="sortable" onclick="sortCustomers('ago')">Prieš (d.)</th>
+            <th class="sortable" onclick="sortCustomers('count')">Užsakymų</th>
+            <th>Produktai</th>
+            <th>Neįvykdyti</th>
+          </tr>
+        </thead>
+        <tbody id="cust-tbody"></tbody>
+      </table>
     </div>
   </div>
 
@@ -538,6 +569,102 @@ function renderTable(data) {
 
 function applyFilter() { renderTable(ALL_DATA); }
 
+/* ── Customer table ── */
+let custSortKey = 'last';
+let custSortDir = -1; // -1 = desc, 1 = asc
+
+function buildCustomerRows(data) {
+  const now = new Date();
+  const map = {};
+  data.forEach(d => {
+    if (!d.uzsakovas) return;
+    if (!map[d.uzsakovas]) map[d.uzsakovas] = { name: d.uzsakovas, orders: [] };
+    map[d.uzsakovas].orders.push(d);
+  });
+  return Object.values(map).map(c => {
+    const dates = c.orders.map(o => o.uzsakymo_data).filter(s => /^\d{4}-\d{2}-\d{2}$/.test(s)).sort();
+    const first = dates[0] || null;
+    const last  = dates[dates.length - 1] || null;
+    const lastDt = last ? parseDate(last) : null;
+    const ago   = lastDt ? daysBetween(lastDt, now) : null;
+    const products = [...new Set(c.orders.map(o => o.produktas).filter(Boolean))].sort().join(', ');
+    const pending  = c.orders.filter(isPending).length;
+    return { name: c.name, first, last, ago, count: c.orders.length, products, pending };
+  });
+}
+
+let ALL_CUSTOMERS = [];
+
+function renderCustomerTable(rows) {
+  const search = (document.getElementById('cust-srch')?.value || '').toLowerCase();
+  let f = search ? rows.filter(r => r.name.toLowerCase().includes(search)) : rows;
+
+  document.getElementById('cust-table-count').textContent = `${f.length} klientų`;
+
+  const now = new Date();
+  document.getElementById('cust-tbody').innerHTML = f.map((r, i) => {
+    const agoCls = r.ago === null ? '' : r.ago <= 30 ? 'db-ok' : r.ago <= 90 ? 'db-warn' : 'db-alert';
+    const agoHtml = r.ago !== null
+      ? `<span class="days-badge ${agoCls}">${r.ago}d.</span>`
+      : '—';
+    const pendHtml = r.pending > 0
+      ? `<span style="font-weight:700;color:#C47A00">${r.pending}</span>`
+      : `<span style="color:#c7c7cc">0</span>`;
+    return `<tr>
+      <td style="color:#8e8e93;font-size:11px">${i + 1}</td>
+      <td style="font-weight:700">${r.name}</td>
+      <td style="font-size:12px;color:#8e8e93">${r.first || '—'}</td>
+      <td style="font-size:12px;font-weight:600">${r.last || '—'}</td>
+      <td>${agoHtml}</td>
+      <td style="font-weight:800;font-size:14px">${r.count}</td>
+      <td style="font-size:11px;color:#6e6e73;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.products}">${r.products || '—'}</td>
+      <td>${pendHtml}</td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="8" style="text-align:center;color:#8e8e93;padding:2rem">Nėra</td></tr>';
+}
+
+function sortCustomers(key) {
+  if (custSortKey === key) {
+    custSortDir *= -1;
+  } else {
+    custSortKey = key;
+    custSortDir = key === 'name' ? 1 : -1;
+  }
+
+  // Update header classes
+  document.querySelectorAll('#cust-table th').forEach(th => {
+    th.classList.remove('sort-asc', 'sort-desc');
+  });
+  const headers = { rank: 0, name: 1, first: 2, last: 3, ago: 4, count: 5 };
+  const idx = headers[key];
+  if (idx !== undefined) {
+    const ths = document.querySelectorAll('#cust-table th');
+    ths[idx].classList.add(custSortDir === 1 ? 'sort-asc' : 'sort-desc');
+  }
+
+  ALL_CUSTOMERS.sort((a, b) => {
+    let av = a[key], bv = b[key];
+    if (av === null) av = custSortDir === 1 ? '￿' : '';
+    if (bv === null) bv = custSortDir === 1 ? '￿' : '';
+    if (typeof av === 'string') return av.localeCompare(bv) * custSortDir;
+    return (av - bv) * custSortDir;
+  });
+  renderCustomerTable(ALL_CUSTOMERS);
+}
+
+function applyCustomerFilter() { renderCustomerTable(ALL_CUSTOMERS); }
+
+function initCustomerTable(data) {
+  ALL_CUSTOMERS = buildCustomerRows(data);
+  // Default: sort by last order desc
+  ALL_CUSTOMERS.sort((a, b) => {
+    if (!a.last) return 1;
+    if (!b.last) return -1;
+    return b.last.localeCompare(a.last);
+  });
+  renderCustomerTable(ALL_CUSTOMERS);
+}
+
 /* ── Customer activity ── */
 function renderActivity(data) {
   const now = new Date();
@@ -632,6 +759,7 @@ function init(data) {
   renderProducts(data);
   renderTransport(data);
   setupFilters(data);
+  initCustomerTable(data);
   renderTable(data);
   renderActivity(data);
   document.getElementById('footer').textContent =
