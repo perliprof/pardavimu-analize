@@ -440,8 +440,8 @@ function daysBetween(a, b) {
   return Math.round((b - a) / 86400000);
 }
 
-const DONE_STATUSES = new Set(['Pristatyta', 'Išsiųsta', 'Atšaukta']);
-function isPending(r) { return !DONE_STATUSES.has(r.busena); }
+const DONE_STATUSES = new Set(['pristatyta', 'išsiųsta', 'atšaukta', 'atšauktas']);
+function isPending(r) { return !DONE_STATUSES.has((r.busena || '').toLowerCase().trim()); }
 
 function isOverdue(r) {
   if (!isPending(r)) return false;
@@ -455,7 +455,7 @@ function badge(s) {
     : s === 'Vykdoma'  ? 'b-vykdoma'
     : s === 'Priimta'  ? 'b-priimta'
     : s === 'Gauta'    ? 'b-gauta'
-    : s === 'Atšaukta' ? 'b-atsaukta'
+    : (s === 'Atšaukta' || s === 'Atšauktas') ? 'b-atsaukta'
     : 'b-default';
   return `<span class="badge ${cls}">${s || '—'}</span>`;
 }
