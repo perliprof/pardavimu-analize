@@ -555,6 +555,12 @@ function normalizeCustomerKey(name) {
   if (n.includes('sustratos integrales'))                                          return 'sustratos integrales s.l'; // "PROJAR / SUSTRATOS INTEGRALES" (per brūkšnelį) = SUSTRATOS INTEGRALES S.L; PROJAR lieka atskiras
   if (n.startsWith('a. bagdono') || n.startsWith('a.bagdono'))                      return 'a. bagdono'; // A. Bagdono geliu ukis
   if (/^sulink[ai]/.test(n))                                                        return 'sulinkiai';  // Sulinkai = Sulinkiai
+  if (/^eko ?zeme/.test(n))                                                         return 'ekozeme';    // Eko zeme = Ekozeme
+  if (/^h[ae]ssel/.test(n))                                                         return 'hasselfors'; // Hasselflors/Hesselfors/Hasselflor
+  if (n.startsWith('jukm') || n.startsWith('junkevic'))                             return 'junkeviciaus kompostas'; // JUKM = Junkeviciaus kompostas
+  if (n.startsWith('mad nordic'))                                                   return 'mad nordic'; // Mad Nordic = Mad Nordic SIA
+  if (n.includes('novarbo'))                                                        return 'novarbo';    // Biolan Novarbo = Novarbo (dukterinė), atskira nuo Biolan
+  if (n.startsWith('perlit invest'))                                                return 'perlit invest'; // Perlit Investa = Perlit Invest
 
   return n;
 }
@@ -562,6 +568,7 @@ function normalizeCustomerKey(name) {
 // Pageidaujami pavadinimai sulietoms grupėms (kai dažniausias variantas netinka)
 const DISPLAY_OVERRIDE = {
   'a. bagdono': 'A. BAGDONO',
+  'junkeviciaus kompostas': 'Junkevičiaus kompostas',
 };
 
 function canonicalizeNames(data) {
