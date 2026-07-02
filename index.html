@@ -636,59 +636,87 @@ async function loadData() {
   }).filter(d => d.uzsakovas && /^\d+$/.test(d.seka));
 }
 
-/* ── Name normalization ── */
-function normalizeCustomerKey(name) {
-  const n = name.trim().toLowerCase()
-    .replace(/[.,;]+$/, '')
-    .replace(/\s+/g, ' ')
-    .replace(/k{1,2}(?:il|li)/g, 'kkil');  // kekila/kekkila/kekklia → kekkila
-
-  if (/^pin[d]?str/.test(n))                                                        return 'pindstrup';  // PINDSTRUP/PINDSTRUB/PINSTRUP + sufiksai
-  if (n.startsWith('treffex'))                                                      return 'treffex';    // Treffex Nurme, Treffex Kurena
-  if (/^miksk?aar/.test(n))                                                         return 'mikskaar';   // Miksaar → Mikskaar
-  if (n.startsWith('legro'))                                                        return 'legro';      // Legro LV → Legro
-  if (n.startsWith('havita') || n.startsWith('hawita') || n.includes('cesvain') || n.includes('akniste')) return 'hawita'; // Havita AKN/CES/Akniste, Cesvaine
-  if (/^hall?n/.test(n))                                                            return 'hallnas';    // Halnas → Hallnas
-  if (/^com[a-z]*peat/.test(n))                                                     return 'compaqpeat'; // Compacpeat/Comaqpeat/Comapaqpeat + sufiksai
-  if (n.startsWith('zibu'))                                                         return 'zibu';       // Zibu Vents, Zibu Ventspils
-  if (/^r[eė]kyva/.test(n))                                                        return 'rekyva';     // Rekyva = Rėkyva
-  if (/^b-?peat/.test(n))                                                           return 'bpeat';      // B-peat → Bpeat
-  if (n.includes('sustratos integrales'))                                          return 'sustratos integrales s.l'; // "PROJAR / SUSTRATOS INTEGRALES" (per brūkšnelį) = SUSTRATOS INTEGRALES S.L; PROJAR lieka atskiras
-  if (n.startsWith('a. bagdono') || n.startsWith('a.bagdono'))                      return 'a. bagdono'; // A. Bagdono geliu ukis
-  if (/^sulink[ai]/.test(n))                                                        return 'sulinkiai';  // Sulinkai = Sulinkiai
-  if (/^eko ?zeme/.test(n))                                                         return 'ekozeme';    // Eko zeme = Ekozeme
-  if (/^h[ae]ssel/.test(n))                                                         return 'hasselfors'; // Hasselflors/Hesselfors/Hasselflor
-  if (n.startsWith('jukm') || n.startsWith('junkevic'))                             return 'junkeviciaus kompostas'; // JUKM = Junkeviciaus kompostas
-  if (n.startsWith('mad nordic'))                                                   return 'mad nordic'; // Mad Nordic = Mad Nordic SIA
-  if (n.includes('novarbo'))                                                        return 'novarbo';    // Biolan Novarbo = Novarbo (dukterinė), atskira nuo Biolan
-  if (n.startsWith('perlit invest'))                                                return 'perlit invest'; // Perlit Investa = Perlit Invest
-
-  return n;
-}
-
-// Pageidaujami pavadinimai sulietoms grupėms (kai dažniausias variantas netinka)
-const DISPLAY_OVERRIDE = {
-  'a. bagdono': 'A. BAGDONO',
-  'junkeviciaus kompostas': 'Junkevičiaus kompostas',
+/* ── Name normalization (LLM sugeneruotas žemėlapis) ──
+   Sugrupuota Claude pagalba iš visų esamų pavadinimų. Kiekviena grupė:
+   kanoninis vardas -> visi jo rašybos/formos variantai (mažosiomis, be pabaigos taškų).
+   Nauji, dar nematyti variantai kol kas rodomi kaip yra (kol atnaujinsim žemėlapį). */
+const NAME_GROUPS = {
+  'PINDSTRUP': [
+    'pindstrup', 'pindstrub', 'pinstrup',
+    'pindstrup danero', 'pindstrub danero', 'pindstrub artvika',
+    'pindstrub w43_7', 'pindstrub w43_6', 'pindstrub w43_5 danero',
+    'pindstrub w43_4 danero', 'pindstrub w43_3 danero',
+    'pindstrub w43_2 danero', 'pindstrub w43_1 danero',
+  ],
+  'PINDSTRUP ISPANIJA': ['pindstrub ispanija', 'pindstrup ispanija'],
+  'KEKKILA EST': ['kekkila est', 'kekklia est', 'kekila est'],
+  'KEKKILA FIN': ['kekkila fin', 'kekila fin'],
+  'Kekkila NL': ['kekkila nl'],
+  'TREFFEX': ['treffex', 'treffex nurme kula', 'treffex kurena kula'],
+  'SUSTRATOS INTEGRALES S.L': ['sustratos integrales s.l', 'projar / sustratos integrales'],
+  'PROJAR': ['projar'],
+  'AGARIS LV': ['agaris lv'],
+  'AGARIS PL': ['agaris pl'],
+  'GREENWORLD': ['greenworld'],
+  'DURPETA': ['durpeta'],
+  'COMPAQPEAT': ['compaqpeat', 'comapaqpeat', 'comaqpeat', 'compacpeat balvi', 'compaqpeat lv'],
+  'LAFLORA': ['laflora'],
+  'REKYVA': ['rekyva', 'rėkyva'],
+  'HAWITA': [
+    'hawita', 'havita', 'hawita cesv', 'hawita akn',
+    'havita akniste', 'havita cesvaine', 'hawita akniste', 'hawita cesvaine',
+  ],
+  'BIOLAN': ['biolan'],
+  'NOVARBO (BIOLAN FIN)': ['novarbo (biolan fin)', 'biolan novarbo'],
+  'LEGRO': ['legro', 'legro lv'],
+  'PERLIPOL': ['perlipol'],
+  'SULINKIAI': ['sulinkiai', 'sulinkai'],
+  'ZIBU VENTSPILS': ['zibu ventsp', 'zibu', 'zibu ventspils'],
+  'Perlit Invest': ['perlit invest', 'perlit investa'],
+  'TURBATOOTED': ['turbatooted'],
+  'MIKSKAAR': ['mikskaar', 'miksaar'],
+  'SILU KUDRA': ['silu kudra'],
+  'JUKNEVIČIAUS KOMPOSTAS': ['juknevičiaus kompostas', 'jukn kompsotas', 'jukn kompostas'],
+  'HASSELFORS': ['hasselflor', 'hasselfors', 'hasselflors'],
+  'BPEAT': ['bpeat', 'b-peat'],
+  'HALLNAS': ['halnas', 'hallnas'],
+  'EKO ZEME': ['eko zeme', 'ekozeme'],
+  'MAD Nordic SIA': ['mad nordic sia', 'mad nordic'],
+  'A. BAGDONO': ['a. bagdono', 'a. bagdono geliu', 'a.bagdono'],
+  'NOWACZYK': ['nowaczyk'],
+  'KIK ZIEMSKIE': ['kik ziemskie'],
+  'BAUMSCHULEN (Klaus Eilers)': ['baumschulen', 'baumschulen klaus eilers e.inh. dennis eilers'],
 };
 
+// Apversti į lookup: variantas(normalizuotas) -> kanoninis vardas
+const NAME_MAP = {};
+Object.entries(NAME_GROUPS).forEach(([canon, variants]) => {
+  variants.forEach(v => { NAME_MAP[v] = canon; });
+});
+
+function nameKey(name) {
+  return name.trim().toLowerCase().replace(/\s+/g, ' ').replace(/[.,;]+$/, '');
+}
+
 function canonicalizeNames(data) {
+  // Nesugrupuotiems raktams — parenkam dažniausią rašybą (suvienodina didž./maž. raides)
   const freq = {};
   data.forEach(d => {
     if (!d.uzsakovas) return;
-    const key = normalizeCustomerKey(d.uzsakovas);
-    if (!freq[key]) freq[key] = {};
-    freq[key][d.uzsakovas] = (freq[key][d.uzsakovas] || 0) + 1;
+    const k = nameKey(d.uzsakovas);
+    (freq[k] = freq[k] || {});
+    freq[k][d.uzsakovas] = (freq[k][d.uzsakovas] || 0) + 1;
   });
-  // Pick most-frequent spelling as canonical (arba override)
-  const canonical = {};
-  Object.entries(freq).forEach(([key, variants]) => {
-    canonical[key] = DISPLAY_OVERRIDE[key] || Object.entries(variants).sort((a, b) => b[1] - a[1])[0][0];
+  const bestForKey = {};
+  Object.entries(freq).forEach(([k, variants]) => {
+    bestForKey[k] = Object.entries(variants).sort((a, b) => b[1] - a[1])[0][0];
   });
-  return data.map(d => ({
-    ...d,
-    uzsakovas: d.uzsakovas ? canonical[normalizeCustomerKey(d.uzsakovas)] : d.uzsakovas,
-  }));
+
+  return data.map(d => {
+    if (!d.uzsakovas) return d;
+    const k = nameKey(d.uzsakovas);
+    return { ...d, uzsakovas: NAME_MAP[k] || bestForKey[k] || d.uzsakovas };
+  });
 }
 
 /* ── KPIs ── */
