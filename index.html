@@ -252,6 +252,18 @@ body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; co
 .cal-nav-btn:hover { background: rgba(255,255,255,0.28); }
 .cal-sel { font-family: 'Montserrat', sans-serif; font-size: 14px; font-weight: 700; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 8px; padding: 5px 10px; cursor: pointer; outline: none; }
 .cal-sel option { background: #1a3a5c; color: white; }
+
+/* Header nav button */
+.nav-btn {
+  font-family: 'Montserrat', sans-serif; font-size: 14px; font-weight: 700;
+  background: rgba(255,255,255,0.15); color: white; border: none; border-radius: 9px;
+  padding: 9px 16px; cursor: pointer; white-space: nowrap;
+}
+.nav-btn:hover { background: rgba(255,255,255,0.28); }
+
+/* Klientai overlay */
+#clients-overlay { display: none; position: fixed; inset: 0; z-index: 500; background: #f0f2f5; flex-direction: column; overflow-y: auto; }
+#clients-overlay.open { display: flex; }
 </style>
 </head>
 <body>
@@ -263,9 +275,12 @@ body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; co
     <h1>Pardavimų analizė · <span id="title-year" class="year-chip" onclick="toggleYear()" title="Perjungti metus"></span></h1>
     <p>Perlito užsakymų stebėjimas · automatiškai atsinaujina kas 5 min.</p>
   </div>
-  <div class="header-meta">
-    <div id="hdr-date"></div>
-    <div id="hdr-total"></div>
+  <div style="display:flex;align-items:center;gap:1.1rem">
+    <button class="nav-btn" onclick="openClients()">👥 Klientai</button>
+    <div class="header-meta">
+      <div id="hdr-date"></div>
+      <div id="hdr-total"></div>
+    </div>
   </div>
 </div>
 
@@ -289,52 +304,12 @@ body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; co
 
   <div class="grid-6040" style="margin-bottom:1.1rem">
     <div class="card">
-      <div class="card-title">
-        Klientų reitingas
-        <span class="card-title-sub">pagal užsakymų skaičių</span>
-      </div>
-      <div id="customer-ranking"></div>
+      <div class="card-title">Produktai <span class="card-title-sub">m³ pagal produktą</span></div>
+      <div class="chart-wrap" style="height:210px"><canvas id="product-chart"></canvas></div>
     </div>
     <div class="card">
-      <div class="card-title">Produktai <span class="card-title-sub">m³</span></div>
-      <div class="chart-wrap" style="height:155px"><canvas id="product-chart"></canvas></div>
-      <div class="card-title" style="margin-top:1rem">Transportas</div>
-      <div class="chart-wrap" style="height:115px"><canvas id="transport-chart"></canvas></div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-title">
-      Klientų aktyvumas
-      <span class="card-title-sub">paskutiniai 60 d. vs. ankstesni 60 d.</span>
-    </div>
-    <div class="activity-grid" id="activity-grid"></div>
-  </div>
-
-  <div class="card">
-    <div class="card-title">
-      Klientų sąrašas
-      <span class="card-title-sub" id="cust-table-count"></span>
-    </div>
-    <div class="filter-bar">
-      <input type="text" id="cust-srch" placeholder="Ieškoti kliento..." oninput="applyCustomerFilter()">
-    </div>
-    <div style="overflow-x:auto">
-      <table class="data-table" id="cust-table">
-        <thead>
-          <tr>
-            <th class="sortable" onclick="sortCustomers('rank')">#</th>
-            <th class="sortable" onclick="sortCustomers('name')">Klientas</th>
-            <th class="sortable" onclick="sortCustomers('first')">Pirmas užs.</th>
-            <th class="sortable sort-desc" onclick="sortCustomers('last')">Paskutinis užs.</th>
-            <th class="sortable" onclick="sortCustomers('ago')">Prieš (d.)</th>
-            <th class="sortable" onclick="sortCustomers('count')">Užsakymų</th>
-            <th>Produktai</th>
-            <th>Neįvykdyti</th>
-          </tr>
-        </thead>
-        <tbody id="cust-tbody"></tbody>
-      </table>
+      <div class="card-title">Transportas</div>
+      <div class="chart-wrap" style="height:210px"><canvas id="transport-chart"></canvas></div>
     </div>
   </div>
 
@@ -384,6 +359,56 @@ body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; co
 </div>
 
 <div class="footer" id="footer"></div>
+
+<!-- Klientai overlay -->
+<div id="clients-overlay">
+  <div class="ov-header" style="background:#0A2342">
+    <button class="ov-back" onclick="closeClients()">← Atgal</button>
+    <span class="ov-title">👥 Klientai</span>
+    <span class="ov-count" id="clients-count"></span>
+  </div>
+  <div class="ov-body" style="max-width:1600px">
+
+    <div class="grid-6040" style="margin-bottom:1.1rem">
+      <div class="card">
+        <div class="card-title">Klientų reitingas <span class="card-title-sub">pagal užsakymų skaičių</span></div>
+        <div id="customer-ranking"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Klientų aktyvumas <span class="card-title-sub">60 d. vs. ankstesni 60 d.</span></div>
+        <div class="activity-grid" id="activity-grid" style="grid-template-columns:1fr"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        Klientų sąrašas
+        <span class="card-title-sub" id="cust-table-count"></span>
+      </div>
+      <div class="filter-bar">
+        <input type="text" id="cust-srch" placeholder="Ieškoti kliento..." oninput="applyCustomerFilter()">
+      </div>
+      <div style="overflow-x:auto">
+        <table class="data-table" id="cust-table">
+          <thead>
+            <tr>
+              <th class="sortable" onclick="sortCustomers('rank')">#</th>
+              <th class="sortable" onclick="sortCustomers('name')">Klientas</th>
+              <th class="sortable" onclick="sortCustomers('first')">Pirmas užs.</th>
+              <th class="sortable sort-desc" onclick="sortCustomers('last')">Paskutinis užs.</th>
+              <th class="sortable" onclick="sortCustomers('ago')">Prieš (d.)</th>
+              <th class="sortable" onclick="sortCustomers('count')">Užsakymų</th>
+              <th>Produktai</th>
+              <th>Neįvykdyti</th>
+            </tr>
+          </thead>
+          <tbody id="cust-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
 
 <!-- New order modal -->
 <div id="order-modal">
@@ -1347,6 +1372,20 @@ function openCalendar() {
 
 function closeCalendar() {
   document.getElementById('calendar-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+/* ── Klientai overlay ── */
+function openClients() {
+  document.getElementById('clients-count').textContent =
+    (ALL_CUSTOMERS ? ALL_CUSTOMERS.length : 0) + ' klientų · ' + viewYear + ' m.';
+  document.getElementById('clients-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  window.scrollTo(0, 0);
+}
+
+function closeClients() {
+  document.getElementById('clients-overlay').classList.remove('open');
   document.body.style.overflow = '';
 }
 
