@@ -511,7 +511,7 @@ body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; co
           <input type="date" id="of-krovimo-data">
         </label>
         <label class="om-field">Užsakymo nr.
-          <input type="text" id="of-nr" autocomplete="off" placeholder="Nr.">
+          <input type="text" id="of-nr" autocomplete="off" placeholder="Nr. (arba „3BB")" oninput="updateM3Suggestion()">
         </label>
         <label class="om-field">Transportas
           <input type="text" id="of-transportas" autocomplete="off" placeholder="Kieno transportas">
@@ -690,10 +690,9 @@ function isPastLoad(r) {
 /* ── Volume (m³) calculation ── */
 function calcM3(rec) {
   const prod  = (rec.produktas  || '').toLowerCase().trim();
-  const komUp = (rec.komentaras || '').toUpperCase();
-
-  // BB count in comment overrides default (1 BB = 1.5 m³)
-  const bbMatch = komUp.match(/(\d+)\s*BB/);
+  // BB kiekis gali būti komentare ARBA „Užsakymo nr" lauke (pvz. „3BB"). 1 BB = 1.5 m³.
+  const bbSource = ((rec.komentaras || '') + ' ' + (rec.uzsakymo_nr || '')).toUpperCase();
+  const bbMatch = bbSource.match(/(\d+)\s*BB/);
   if (bbMatch) return parseFloat(bbMatch[1]) * 1.5;
 
   // Fixed-volume products
@@ -1666,8 +1665,9 @@ function updateM3Suggestion() {
   const m3El = document.getElementById('of-m3');
   if (m3El.dataset.touched === '1') return;
   const v = calcM3({
-    produktas:  document.getElementById('of-produktas').value,
-    komentaras: document.getElementById('of-komentaras').value,
+    produktas:   document.getElementById('of-produktas').value,
+    komentaras:  document.getElementById('of-komentaras').value,
+    uzsakymo_nr: document.getElementById('of-nr').value,
   });
   m3El.value = (v === null || v === undefined) ? '' : v;
 }
