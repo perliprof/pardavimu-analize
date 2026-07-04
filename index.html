@@ -660,6 +660,26 @@ function parseCSVRow(row) {
   return res;
 }
 
+// Pilnas CSV skaitytojas — teisingai apdoroja laukus su naujomis eilutėmis (pvz. „GABIJA\nBARANAUSKAITĖ")
+function parseCSV(text) {
+  const rows = []; let row = [], field = '', q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) {
+      if (c === '"') { if (text[i + 1] === '"') { field += '"'; i++; } else q = false; }
+      else field += c;
+    } else {
+      if (c === '"') q = true;
+      else if (c === ',') { row.push(field); field = ''; }
+      else if (c === '\n') { row.push(field); rows.push(row); row = []; field = ''; }
+      else if (c !== '\r') field += c;
+    }
+  }
+  if (field !== '' || row.length) { row.push(field); rows.push(row); }
+  return rows;
+}
+function cleanCell(s) { return (s || '').replace(/[\r\n]+/g, ' ').trim(); }
+
 function parseDate(s) {
   if (!s || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return null;
   const d = new Date(s + 'T12:00:00');
@@ -729,20 +749,19 @@ async function loadData() {
   const r = await fetch(CSV_URL + '&t=' + Date.now());
   if (!r.ok) throw new Error('HTTP ' + r.status);
   const text = await r.text();
-  const rows = text.trim().split('\n');
-  return rows.slice(1).map(row => {
-    const v = parseCSVRow(row);
+  const rows = parseCSV(text);
+  return rows.slice(1).map(v => {
     return {
-      seka:          v[0]  || '',
-      uzsakymo_data: v[1]  || '',
-      krovimo_data:  v[2]  || '',
-      produktas:     v[3]  || '',
-      uzsakovas:     v[4]  || '',
-      uzsakymo_nr:   v[5]  || '',
-      busena:        v[6]  || '',
-      transportas:   v[7]  || '',
-      m3:            v[8]  || '',   // esama m³ reikšmė lentelėje (redagavimui)
-      komentaras:    v[9]  || '',
+      seka:          cleanCell(v[0]),
+      uzsakymo_data: cleanCell(v[1]),
+      krovimo_data:  cleanCell(v[2]),
+      produktas:     cleanCell(v[3]),
+      uzsakovas:     cleanCell(v[4]),
+      uzsakymo_nr:   cleanCell(v[5]),
+      busena:        cleanCell(v[6]),
+      transportas:   cleanCell(v[7]),
+      m3:            cleanCell(v[8]),   // esama m³ reikšmė lentelėje (redagavimui)
+      komentaras:    cleanCell(v[9]),
     };
   }).filter(d => d.uzsakovas && /^\d+$/.test(d.seka));
 }
