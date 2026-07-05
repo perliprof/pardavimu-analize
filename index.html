@@ -297,6 +297,8 @@ body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; co
 .wk-load:last-child { border-bottom: none; }
 .wk-empty { color: #c7c7cc; font-size: 12.5px; padding: 6px 0; }
 .wk-notes { margin-top: 0.55rem; border: 1px dashed #c7c7cc; border-radius: 8px; min-height: 48px; padding: 5px 10px; font-size: 11px; color: #b0b0b8; }
+.wk-prod-summary { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 0.5rem; padding-bottom: 0.5rem; border-bottom: 1px solid #eef0f3; }
+.wk-prod-chip { font-size: 12.5px; background: #eef4fb; color: #1A4F80; border-radius: 20px; padding: 3px 11px; }
 
 @media print {
   body * { visibility: hidden; }
@@ -1575,13 +1577,24 @@ function renderWeek() {
     const isToday = ds === todayStr;
     const isWknd = i >= 5;
     const loads = ALL_DATA.filter(o => o.krovimo_data === ds)
-      .sort((a, b) => (a.uzsakovas || '').localeCompare(b.uzsakovas || ''));
+      .sort((a, b) => (a.produktas || '').localeCompare(b.produktas || '') || (a.uzsakovas || '').localeCompare(b.uzsakovas || ''));
     let sumM3 = 0; loads.forEach(o => { const v = calcM3(o); if (v) sumM3 += v; });
+
+    // Produktų suvestinė šiai dienai
+    const prodMap = {};
+    loads.forEach(o => {
+      const p = o.produktas || '—';
+      if (!prodMap[p]) prodMap[p] = { m3: 0, cnt: 0 };
+      const v = calcM3(o); prodMap[p].m3 += (v || 0); prodMap[p].cnt++;
+    });
+    const prodChips = Object.entries(prodMap).sort((a, b) => b[1].m3 - a[1].m3).map(([p, x]) =>
+      `<span class="wk-prod-chip">${p} · <strong>${x.m3 ? x.m3.toLocaleString('lt-LT') + ' m³' : x.cnt + ' vnt'}</strong> <span style="opacity:0.55">(${x.cnt})</span></span>`
+    ).join('');
 
     const loadHtml = loads.length ? loads.map(o => `
       <div class="wk-load">
+        <span style="color:#2B6CB0;font-weight:700;min-width:80px">${o.produktas || '—'}</span>
         <span style="font-weight:700;min-width:160px">${o.uzsakovas || '—'}</span>
-        <span style="color:#2B6CB0;font-weight:600;min-width:80px">${o.produktas || '—'}</span>
         <span style="font-weight:700;min-width:60px">${fmtM3(calcM3(o))} m³</span>
         <span style="min-width:90px">${badge(o.busena)}</span>
         <span style="color:#6e6e73;font-size:12px">${o.transportas || ''}</span>
@@ -1594,6 +1607,7 @@ function renderWeek() {
         <span class="wd-sum">${loads.length} krov.${sumM3 ? ' · ' + sumM3.toLocaleString('lt-LT') + ' m³' : ''}</span>
       </div>
       <div class="wk-day-body">
+        ${loads.length ? `<div class="wk-prod-summary">${prodChips}</div>` : ''}
         ${loadHtml}
         <div class="wk-notes">Pastabos:</div>
       </div>
