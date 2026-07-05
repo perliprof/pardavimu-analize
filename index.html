@@ -309,18 +309,33 @@ body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; co
 .wk-veh-input:focus { border-bottom-color: #2B6CB0; }
 
 @media print {
-  @page { size: landscape; margin: 8mm; }
+  @page { size: A4 landscape; margin: 5mm; }
   body * { visibility: hidden; }
   #week-overlay, #week-overlay * { visibility: visible; }
   #week-overlay { position: absolute; inset: 0; overflow: visible; background: white; display: block; }
   .wk-noprint { display: none !important; }
-  #wk-print-title { display: block; }
+  .wk-day-empty { display: none !important; }        /* tuščios dienos nespausdinamos */
+  #wk-print-title { display: block; font-size: 12px; margin-bottom: 4px; }
   .week-body { max-width: 100%; padding: 0; }
-  .wk-day { break-inside: avoid; border: 1px solid #999; box-shadow: none; margin-bottom: 0.4rem; }
-  .wk-day-head { background: #0A2342 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  /* Kompaktiška — kad tilptų į vieną lapą */
+  #week-overlay { font-size: 8px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .wk-day { break-inside: avoid; border: 1px solid #999; box-shadow: none; border-radius: 5px; margin-bottom: 3px; }
+  .wk-day-head { background: #0A2342 !important; padding: 2px 6px; }
+  .wk-day-head .wd-name { font-size: 10px; }
+  .wk-day-head .wd-sum { font-size: 8px; }
   .wk-day.is-weekend .wk-day-head { background: #6e6e73 !important; }
-  .wk-col-head { background: #eef4fb !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .wk-veh-input { border-bottom: 1px solid #999; }
+  .wk-day-cols { gap: 3px; padding: 3px 4px; }
+  .wk-col { border-radius: 4px; }
+  .wk-col-head { background: #eef4fb !important; font-size: 8px; padding: 2px 5px; }
+  .wk-o { padding: 2px 5px; }
+  .wk-o-top { font-size: 8.5px; }
+  .wk-o-nr { font-size: 7px; }
+  .wk-o-meta { font-size: 7px; margin-top: 0; gap: 3px; }
+  .wk-o-com { font-size: 7px; margin-top: 0; }
+  .wk-o-veh { font-size: 7.5px; margin-top: 2px; }
+  .wk-veh-input { font-size: 7.5px; border-bottom: 1px solid #999; }
+  .badge { font-size: 7px; padding: 0 4px; }
 }
 </style>
 </head>
@@ -1616,7 +1631,7 @@ function renderWeek() {
       </div>`;
     }).join('') : '<div class="wk-empty">— nėra krovinių —</div>';
 
-    return `<div class="wk-day${isToday ? ' is-today' : ''}${isWknd ? ' is-weekend' : ''}">
+    return `<div class="wk-day${isToday ? ' is-today' : ''}${isWknd ? ' is-weekend' : ''}${dayLoads.length ? '' : ' wk-day-empty'}">
       <div class="wk-day-head">
         <span class="wd-name">${DOW_FULL[i]} · ${ds.slice(5)}${isToday ? ' · ŠIANDIEN' : ''}</span>
         <span class="wd-sum">${dayLoads.length} krov.${sumM3 ? ' · ' + sumM3.toLocaleString('lt-LT') + ' m³' : ''}</span>
