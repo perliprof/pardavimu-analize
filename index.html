@@ -716,6 +716,16 @@ const MONTH_LT = ['Sau','Vas','Kov','Bal','Geg','Bir','Lie','Rug','Rgs','Spa','L
 const DOW_LT   = ['Pir','Ant','Tre','Ket','Pen','Šeš','Sek'];
 const COLORS   = ['#2B6CB0','#1A7A4A','#D97706','#6B46C1','#C0392B','#0F7870','#C47A00','#AEADB3'];
 
+// Escape spreadsheet-supplied strings before they hit innerHTML.
+// Cell values (client names, comments) come from a shared sheet that multiple
+// people — and, via the write endpoint, potentially anyone — can edit. Without
+// this, a comment like <img src=x onerror=...> runs in every viewer's browser.
+function escapeHtml(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
 let ALL_DATA = [];
 let _charts = {};
 function mkChart(id, config) {
@@ -817,7 +827,7 @@ function badge(s) {
     : s === 'Gauta'    ? 'b-gauta'
     : (s === 'Atšaukta' || s === 'Atšauktas') ? 'b-atsaukta'
     : 'b-default';
-  return `<span class="badge ${cls}">${s || '—'}</span>`;
+  return `<span class="badge ${cls}">${escapeHtml(s || '—')}</span>`;
 }
 
 async function loadData() {
@@ -1028,7 +1038,7 @@ function renderCustomers(data) {
       const m3 = m3tot[name] || 0;
       return `<tr style="cursor:pointer" onclick="openCustomer('${jsAttr(name)}')">
         <td style="font-weight:800;color:#0A2342;width:26px">${medal || (i+1)}</td>
-        <td class="clickable-name" style="font-weight:600;max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${name}</td>
+        <td class="clickable-name" style="font-weight:600;max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(name)}</td>
         <td style="width:90px"><div class="rank-bar-bg"><div class="rank-bar-fill" style="width:${Math.round(cnt/max*100)}%"></div></div></td>
         <td style="text-align:right;padding-right:6px;white-space:nowrap">
           <span style="font-weight:800;font-size:15px">${cnt}</span>
@@ -1150,17 +1160,17 @@ function renderTable(data) {
     const vol = calcM3(d);
     const clickable = WRITE_ENDPOINT ? ` onclick="openEditOrder('${d.seka}')" style="cursor:pointer"` : '';
     return `<tr${od?' class="overdue"':''}${clickable}>
-      <td style="color:#8e8e93;font-size:11px">${d.seka}</td>
-      <td style="white-space:nowrap;font-size:12px">${d.uzsakymo_data||'—'}</td>
-      <td style="white-space:nowrap;font-size:12px">${d.krovimo_data||'—'}</td>
-      <td><strong>${d.produktas||'—'}</strong></td>
+      <td style="color:#8e8e93;font-size:11px">${escapeHtml(d.seka)}</td>
+      <td style="white-space:nowrap;font-size:12px">${escapeHtml(d.uzsakymo_data||'—')}</td>
+      <td style="white-space:nowrap;font-size:12px">${escapeHtml(d.krovimo_data||'—')}</td>
+      <td><strong>${escapeHtml(d.produktas||'—')}</strong></td>
       <td style="text-align:right;font-weight:700;font-size:12px;color:#0A2342;white-space:nowrap">${fmtM3(vol)}</td>
-      <td style="font-weight:600;white-space:nowrap">${d.uzsakovas||'—'}</td>
-      <td style="font-size:11px;color:#8e8e93">${d.uzsakymo_nr||'—'}</td>
+      <td style="font-weight:600;white-space:nowrap">${escapeHtml(d.uzsakovas||'—')}</td>
+      <td style="font-size:11px;color:#8e8e93">${escapeHtml(d.uzsakymo_nr||'—')}</td>
       <td>${badge(d.busena)}</td>
-      <td style="font-size:11px">${d.transportas||'—'}</td>
+      <td style="font-size:11px">${escapeHtml(d.transportas||'—')}</td>
       <td>${waitHtml}</td>
-      <td style="font-size:11px;color:#8e8e93;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${d.komentaras||''}">${d.komentaras||''}</td>
+      <td style="font-size:11px;color:#8e8e93;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escapeHtml(d.komentaras||'')}">${escapeHtml(d.komentaras||'')}</td>
     </tr>`;
   }).join('') || '<tr><td colspan="11" style="text-align:center;color:#8e8e93;padding:2rem">Nėra rezultatų</td></tr>';
 }
@@ -1213,12 +1223,12 @@ function renderCustomerTable(rows) {
     const pendHtml = r.pending > 0 ? `<span style="font-weight:700;color:#C47A00">${r.pending}</span>` : `<span style="color:#c7c7cc">0</span>`;
     return `<tr style="cursor:pointer" onclick="openCustomer('${jsAttr(r.name)}')">
       <td style="color:#8e8e93;font-size:11px">${i + 1}</td>
-      <td style="font-weight:700" class="clickable-name">${r.name}</td>
-      <td style="font-size:12px;color:#8e8e93">${r.first || '—'}</td>
-      <td style="font-size:12px;font-weight:600">${r.last || '—'}</td>
+      <td style="font-weight:700" class="clickable-name">${escapeHtml(r.name)}</td>
+      <td style="font-size:12px;color:#8e8e93">${escapeHtml(r.first || '—')}</td>
+      <td style="font-size:12px;font-weight:600">${escapeHtml(r.last || '—')}</td>
       <td>${agoHtml}</td>
       <td style="white-space:nowrap"><span style="font-weight:800;font-size:15px">${r.count}</span><br><span style="font-weight:800;font-size:15px;color:#1A7A4A">${r.custM3 ? r.custM3.toLocaleString('lt-LT') + ' m³' : '—'}</span></td>
-      <td style="font-size:11px;color:#6e6e73;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.products}">${r.products || '—'}</td>
+      <td style="font-size:11px;color:#6e6e73;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escapeHtml(r.products)}">${escapeHtml(r.products || '—')}</td>
       <td>${pendHtml}</td>
     </tr>`;
   }).join('') || '<tr><td colspan="8" style="text-align:center;color:#8e8e93;padding:2rem">Nėra</td></tr>';
@@ -1306,7 +1316,7 @@ function renderActivity(data) {
     if (!list.length) return '<div style="text-align:center;padding:1.5rem 0;color:#8e8e93;font-size:12px">Nėra</div>';
     return list.map(c => `
       <div class="act-item">
-        <div><div class="act-name">${c.name}</div><div class="act-meta">Iš viso: ${c.tot} · ${c.ago!==null?c.ago+'d. atgal':'—'}</div></div>
+        <div><div class="act-name">${escapeHtml(c.name)}</div><div class="act-meta">Iš viso: ${c.tot} · ${c.ago!==null?c.ago+'d. atgal':'—'}</div></div>
         <div style="text-align:right;font-size:11px;font-weight:700;color:#8e8e93">${c.last60} / ${c.prev60}</div>
       </div>`).join('');
   }
@@ -1343,17 +1353,17 @@ function openOverduePage() {
     const wCls = w === null ? '' : w <= 5 ? 'db-ok' : w <= 14 ? 'db-warn' : 'db-alert';
     const clickable = WRITE_ENDPOINT ? ` onclick="openEditOrder('${d.seka}')" style="cursor:pointer"` : '';
     return `<tr${pastLoad ? ' class="overdue"' : ''}${clickable}>
-      <td style="color:#8e8e93;font-size:11px">${d.seka}</td>
-      <td style="white-space:nowrap;font-size:12px">${d.uzsakymo_data || '—'}</td>
-      <td style="white-space:nowrap;font-size:12px${pastLoad ? ';font-weight:700;color:#C0392B' : ''}">${d.krovimo_data || '—'}</td>
+      <td style="color:#8e8e93;font-size:11px">${escapeHtml(d.seka)}</td>
+      <td style="white-space:nowrap;font-size:12px">${escapeHtml(d.uzsakymo_data || '—')}</td>
+      <td style="white-space:nowrap;font-size:12px${pastLoad ? ';font-weight:700;color:#C0392B' : ''}">${escapeHtml(d.krovimo_data || '—')}</td>
       <td>${w !== null ? `<span class="days-badge ${wCls}">${w}d.</span>` : '—'}</td>
-      <td><strong>${d.produktas || '—'}</strong></td>
+      <td><strong>${escapeHtml(d.produktas || '—')}</strong></td>
       <td style="text-align:right;font-weight:700;font-size:12px;color:#0A2342;white-space:nowrap">${fmtM3(vol)}</td>
-      <td style="font-weight:600;white-space:nowrap">${d.uzsakovas || '—'}</td>
-      <td style="font-size:11px;color:#8e8e93">${d.uzsakymo_nr || '—'}</td>
+      <td style="font-weight:600;white-space:nowrap">${escapeHtml(d.uzsakovas || '—')}</td>
+      <td style="font-size:11px;color:#8e8e93">${escapeHtml(d.uzsakymo_nr || '—')}</td>
       <td>${badge(d.busena)}</td>
-      <td style="font-size:11px">${d.transportas || '—'}</td>
-      <td style="font-size:11px;color:#8e8e93;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${d.komentaras || ''}">${d.komentaras || ''}</td>
+      <td style="font-size:11px">${escapeHtml(d.transportas || '—')}</td>
+      <td style="font-size:11px;color:#8e8e93;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escapeHtml(d.komentaras || '')}">${escapeHtml(d.komentaras || '')}</td>
     </tr>`;
   }).join('') || '<tr><td colspan="11" style="text-align:center;padding:2rem;color:#8e8e93">Nėra vėluojančių užsakymų</td></tr>';
 
@@ -1399,22 +1409,22 @@ function openPendingPage() {
     const wHtml = w !== null ? `<span class="days-badge ${wCls}">${w}d.</span>` : '—';
     const lateDays = od ? daysBetween(parseDate(d.krovimo_data), now) : null;
     const krovHtml = od
-      ? `<span style="font-weight:700;color:#C0392B">${d.krovimo_data}</span> <span class="days-badge db-alert">+${lateDays}d.</span>`
-      : (d.krovimo_data || '—');
+      ? `<span style="font-weight:700;color:#C0392B">${escapeHtml(d.krovimo_data)}</span> <span class="days-badge db-alert">+${lateDays}d.</span>`
+      : escapeHtml(d.krovimo_data || '—');
     const vol = calcM3(d);
     const clickable = WRITE_ENDPOINT ? ` onclick="openEditOrder('${d.seka}')" style="cursor:pointer"` : '';
     return `<tr${od ? ' class="overdue"' : ''}${clickable}>
-      <td style="color:#8e8e93;font-size:11px">${d.seka}</td>
-      <td style="white-space:nowrap;font-size:12px">${d.uzsakymo_data || '—'}</td>
+      <td style="color:#8e8e93;font-size:11px">${escapeHtml(d.seka)}</td>
+      <td style="white-space:nowrap;font-size:12px">${escapeHtml(d.uzsakymo_data || '—')}</td>
       <td style="white-space:nowrap;font-size:12px">${krovHtml}</td>
       <td>${wHtml}</td>
-      <td><strong>${d.produktas || '—'}</strong></td>
+      <td><strong>${escapeHtml(d.produktas || '—')}</strong></td>
       <td style="text-align:right;font-weight:700;font-size:12px;color:#0A2342;white-space:nowrap">${fmtM3(vol)}</td>
-      <td style="font-weight:600;white-space:nowrap">${d.uzsakovas || '—'}</td>
-      <td style="font-size:11px;color:#8e8e93">${d.uzsakymo_nr || '—'}</td>
+      <td style="font-weight:600;white-space:nowrap">${escapeHtml(d.uzsakovas || '—')}</td>
+      <td style="font-size:11px;color:#8e8e93">${escapeHtml(d.uzsakymo_nr || '—')}</td>
       <td>${badge(d.busena)}</td>
-      <td style="font-size:11px">${d.transportas || '—'}</td>
-      <td style="font-size:11px;color:#8e8e93;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${d.komentaras || ''}">${d.komentaras || ''}</td>
+      <td style="font-size:11px">${escapeHtml(d.transportas || '—')}</td>
+      <td style="font-size:11px;color:#8e8e93;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escapeHtml(d.komentaras || '')}">${escapeHtml(d.komentaras || '')}</td>
     </tr>`;
   }).join('') || '<tr><td colspan="11" style="text-align:center;padding:2rem;color:#8e8e93">Nėra neįvykdytų užsakymų</td></tr>';
 
@@ -1514,7 +1524,7 @@ function renderCalendar(year, month) {
         : (o.busena === 'Pristatyta' || o.busena === 'Išsiųsta') ? 'cal-o-done'
         : isPastLoad(o) ? 'cal-o-overdue'
         : 'cal-o-pending';
-      return `<span class="cal-order ${oc}" title="${o.uzsakovas} · ${o.produktas} · ${o.busena}">${o.uzsakovas}</span>`;
+      return `<span class="cal-order ${oc}" title="${escapeHtml(o.uzsakovas + ' · ' + o.produktas + ' · ' + o.busena)}">${escapeHtml(o.uzsakovas)}</span>`;
     }).join('');
     const more = orders.length > MAX ? `<div class="cal-more">+${orders.length - MAX} dar</div>` : '';
 
@@ -1620,13 +1630,13 @@ function renderWeek() {
       let pM3 = 0; orders.forEach(o => { const v = calcM3(o); if (v) pM3 += v; });
       const ordersHtml = orders.length ? orders.map(o => `
         <div class="wk-o">
-          <div class="wk-o-top">${o.uzsakovas || '—'}${o.uzsakymo_nr ? ' <span class="wk-o-nr">' + o.uzsakymo_nr + '</span>' : ''}</div>
-          <div class="wk-o-meta">${badge(o.busena)} <span style="color:#8e8e93">${fmtM3(calcM3(o))} m³</span>${o.transportas ? ' · ' + o.transportas : ''}</div>
-          ${o.komentaras ? `<div class="wk-o-com">${o.komentaras}</div>` : ''}
+          <div class="wk-o-top">${escapeHtml(o.uzsakovas || '—')}${o.uzsakymo_nr ? ' <span class="wk-o-nr">' + escapeHtml(o.uzsakymo_nr) + '</span>' : ''}</div>
+          <div class="wk-o-meta">${badge(o.busena)} <span style="color:#8e8e93">${fmtM3(calcM3(o))} m³</span>${o.transportas ? ' · ' + escapeHtml(o.transportas) : ''}</div>
+          ${o.komentaras ? `<div class="wk-o-com">${escapeHtml(o.komentaras)}</div>` : ''}
           <div class="wk-o-veh">🚚 <input class="wk-veh-input" type="text" placeholder="automobilio info…"></div>
         </div>`).join('') : '<div class="wk-col-empty">—</div>';
       return `<div class="wk-col">
-        <div class="wk-col-head">${p}${pM3 ? ' · ' + pM3.toLocaleString('lt-LT') + ' m³' : ''}</div>
+        <div class="wk-col-head">${escapeHtml(p)}${pM3 ? ' · ' + pM3.toLocaleString('lt-LT') + ' m³' : ''}</div>
         ${ordersHtml}
       </div>`;
     }).join('') : '<div class="wk-empty">— nėra krovinių —</div>';
@@ -1696,15 +1706,15 @@ function openCustomer(name) {
     const od = isPastLoad(d);
     const clickable = WRITE_ENDPOINT ? ` onclick="openEditOrder('${d.seka}')" style="cursor:pointer"` : '';
     return `<tr${od ? ' class="overdue"' : ''}${clickable}>
-      <td style="color:#8e8e93;font-size:11px">${d.seka}</td>
-      <td style="white-space:nowrap;font-size:12px">${d.uzsakymo_data || '—'}</td>
-      <td style="white-space:nowrap;font-size:12px">${d.krovimo_data || '—'}</td>
-      <td><strong>${d.produktas || '—'}</strong></td>
+      <td style="color:#8e8e93;font-size:11px">${escapeHtml(d.seka)}</td>
+      <td style="white-space:nowrap;font-size:12px">${escapeHtml(d.uzsakymo_data || '—')}</td>
+      <td style="white-space:nowrap;font-size:12px">${escapeHtml(d.krovimo_data || '—')}</td>
+      <td><strong>${escapeHtml(d.produktas || '—')}</strong></td>
       <td style="text-align:right;font-weight:700;font-size:12px;white-space:nowrap">${fmtM3(calcM3(d))}</td>
-      <td style="font-size:11px;color:#8e8e93">${d.uzsakymo_nr || '—'}</td>
+      <td style="font-size:11px;color:#8e8e93">${escapeHtml(d.uzsakymo_nr || '—')}</td>
       <td>${badge(d.busena)}</td>
-      <td style="font-size:11px">${d.transportas || '—'}</td>
-      <td style="font-size:11px;color:#8e8e93;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${d.komentaras || ''}">${d.komentaras || ''}</td>
+      <td style="font-size:11px">${escapeHtml(d.transportas || '—')}</td>
+      <td style="font-size:11px;color:#8e8e93;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escapeHtml(d.komentaras || '')}">${escapeHtml(d.komentaras || '')}</td>
     </tr>`;
   }).join('') || '<tr><td colspan="9" style="text-align:center;color:#8e8e93;padding:2rem">Nėra užsakymų šiais metais</td></tr>';
 
@@ -1733,11 +1743,11 @@ function renderClarification(data) {
 
   document.getElementById('clarif-list').innerHTML = unclear.map(d => `
     <div id="ci-${d.seka}" style="display:flex;align-items:center;gap:1rem;padding:5px 8px;background:#fffdf0;border-radius:8px;border:1px solid #FEF3DA;font-size:12px">
-      <span style="color:#c7c7cc;font-size:10.5px;white-space:nowrap;flex-shrink:0">eilutė ${d.seka}</span>
-      <span style="font-weight:700;min-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${d.uzsakovas}">${d.uzsakovas || '—'}</span>
-      <span style="color:#2B6CB0;font-weight:600;white-space:nowrap">${d.produktas || '—'}</span>
-      <span style="color:#6e6e73;white-space:nowrap">krovimas: <strong>${d.krovimo_data || '—'}</strong></span>
-      <span style="color:#8e8e93;font-style:italic;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${d.komentaras || ''}">${d.komentaras ? '"' + d.komentaras + '"' : '— komentaro nėra —'}</span>
+      <span style="color:#c7c7cc;font-size:10.5px;white-space:nowrap;flex-shrink:0">eilutė ${escapeHtml(d.seka)}</span>
+      <span style="font-weight:700;min-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${escapeHtml(d.uzsakovas)}">${escapeHtml(d.uzsakovas || '—')}</span>
+      <span style="color:#2B6CB0;font-weight:600;white-space:nowrap">${escapeHtml(d.produktas || '—')}</span>
+      <span style="color:#6e6e73;white-space:nowrap">krovimas: <strong>${escapeHtml(d.krovimo_data || '—')}</strong></span>
+      <span style="color:#8e8e93;font-style:italic;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escapeHtml(d.komentaras || '')}">${d.komentaras ? '"' + escapeHtml(d.komentaras) + '"' : '— komentaro nėra —'}</span>
       <button class="clarif-btn" id="cb-${d.seka}" onclick="confirmOrder('${d.seka}', this)" style="margin-left:auto">Patvirtinti</button>
     </div>`).join('');
 }
@@ -1782,8 +1792,8 @@ function setupNewOrder(data) {
   // Datalist'ai: klientai ir produktai
   const clients  = [...new Set(data.map(d => d.uzsakovas).filter(Boolean))].sort();
   const products = [...new Set(data.map(d => d.produktas).filter(Boolean))].sort();
-  document.getElementById('dl-clients').innerHTML  = clients.map(c => `<option value="${c.replace(/"/g,'&quot;')}">`).join('');
-  document.getElementById('dl-products').innerHTML = products.map(p => `<option value="${p.replace(/"/g,'&quot;')}">`).join('');
+  document.getElementById('dl-clients').innerHTML  = clients.map(c => `<option value="${escapeHtml(c)}">`).join('');
+  document.getElementById('dl-products').innerHTML = products.map(p => `<option value="${escapeHtml(p)}">`).join('');
 }
 
 let EDIT_SEKA = null;     // jei redaguojam — čia užsakymo seka; jei naujas — null
@@ -1873,6 +1883,11 @@ async function submitNewOrder() {
   if (!payload.uzsakovas || !payload.produktas) {
     msg.textContent = 'Užpildyk bent Užsakovą ir Produktą.'; msg.className = 'om-msg err'; return;
   }
+  // Be tvarkingos užsakymo datos (YYYY-MM-DD) užsakymas iškrenta iš metų filtro
+  // ir nebematomas JOKIOJE suvestinėje (lentelėje, vėluojančiuose, kliente).
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(payload.uzsakymo_data)) {
+    msg.textContent = 'Įvesk užsakymo datą — be jos užsakymas nematomas suvestinėje.'; msg.className = 'om-msg err'; return;
+  }
   if (!payload.secret) {
     msg.textContent = 'Įvesk rašymo slaptažodį.'; msg.className = 'om-msg err'; return;
   }
@@ -1886,7 +1901,10 @@ async function submitNewOrder() {
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify(payload),
     });
-    const out = await resp.json();
+    if (!resp.ok) throw new Error('Serveris neatsako (HTTP ' + resp.status + '). Bandyk vėliau.');
+    let out;
+    try { out = await resp.json(); }
+    catch (_) { throw new Error('Netikėtas atsakymas iš serverio — gali reikėti iš naujo prisijungti prie Google.'); }
     if (!out.ok) throw new Error(out.error || 'Nepavyko išsaugoti');
 
     localStorage.setItem('po_secret', payload.secret); // atsimenam slaptažodį
@@ -1960,16 +1978,20 @@ function init(data) {
   const startYear = AVAILABLE_YEARS.includes(nowYear) ? nowYear : (AVAILABLE_YEARS[0] || nowYear);
   applyYear(startYear);
 
+  // Eilutės su tuščia/netvarkinga data neįeina į jokį metų vaizdą — tyliai dingsta.
+  // Parodom kiek tokių yra, kad nebūtų pamestos nepastebimai.
+  const hiddenNoDate = FULL_DATA.filter(d => !/^\d{4}$/.test((d.uzsakymo_data || '').substring(0, 4))).length;
   document.getElementById('footer').textContent =
     'Atnaujinta: ' + new Date().toLocaleString('lt-LT', { dateStyle: 'short', timeStyle: 'short' }) +
-    ' · Atsinaujina kas 5 min.';
+    ' · Atsinaujina kas 5 min.' +
+    (hiddenNoDate ? ' · ⚠️ ' + hiddenNoDate + ' užsak. be tvarkingos datos nerodoma suvestinėje' : '');
   document.getElementById('loading').style.display = 'none';
 }
 
 (async () => {
   try { init(await loadData()); }
   catch(e) {
-    document.getElementById('loading').innerHTML = 'Klaida: ' + e.message;
+    document.getElementById('loading').textContent = 'Klaida: ' + e.message;
   }
 })();
 </script>
