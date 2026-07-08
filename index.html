@@ -250,7 +250,10 @@ body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; co
 .cal-cell.is-today .cal-day-num { color: #2B6CB0; }
 .cal-day-month { font-size: 10px; color: #8e8e93; font-weight: 600; margin-bottom: 2px; }
 .cal-holiday-label { font-size: 9px; font-weight: 700; color: #D97706; background: #FEF3DA; border-radius: 3px; padding: 1px 5px; margin: 3px 0 4px; display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.cal-order { font-size: 10px; padding: 2px 5px; border-radius: 4px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; display: block; cursor: default; }
+.cal-order { font-size: 10px; padding: 3px 5px; border-radius: 4px; margin-top: 3px; max-width: 100%; display: block; cursor: default; line-height: 1.35; }
+.cal-o-prod { font-weight: 800; font-size: 11px; }
+.cal-o-kiekis { font-weight: 600; opacity: 0.85; }
+.cal-o-klientas { font-size: 9px; opacity: 0.75; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cal-o-overdue  { background: #fce9e7; color: #C0392B; }
 .cal-o-pending  { background: #E3EEF8; color: #1A4F80; }
 .cal-o-done     { background: #e6f4ec; color: #1A7A4A; }
@@ -1539,16 +1542,19 @@ function renderCalendar(year, month) {
       (isPast && !isToday)  ? 'is-past'      : '',
     ].filter(Boolean).join(' ');
 
-    const MAX = 5;
-    const orderHtml = orders.slice(0, MAX).map(o => {
+    const orderHtml = orders.map(o => {
       const oc = o.busena === 'Atšaukta'
         ? 'cal-o-cancelled'
         : (o.busena === 'Pristatyta' || o.busena === 'Išsiųsta') ? 'cal-o-done'
         : isPastLoad(o) ? 'cal-o-overdue'
         : 'cal-o-pending';
-      return `<span class="cal-order ${oc}" title="${escapeHtml(o.uzsakovas + ' · ' + o.produktas + ' · ' + o.busena)}">${escapeHtml(o.uzsakovas)}<br><span style="opacity:0.75;font-size:9px">${escapeHtml(o.produktas||'')}</span></span>`;
+      const m3 = calcM3(o);
+      return `<span class="cal-order ${oc}" title="${escapeHtml(o.uzsakovas + ' · ' + o.produktas + ' · ' + o.busena)}">
+        <span class="cal-o-prod">${escapeHtml(o.produktas||'—')}${m3 ? `<span class="cal-o-kiekis"> · ${fmtM3(m3)} m³</span>` : ''}</span>
+        <div class="cal-o-klientas">${escapeHtml(o.uzsakovas||'')}</div>
+      </span>`;
     }).join('');
-    const more = orders.length > MAX ? `<div class="cal-more">+${orders.length - MAX} dar</div>` : '';
+    const more = '';
 
     html += `<div class="${cls}">
       <div class="cal-day-num">${d.getDate()}</div>
@@ -1652,9 +1658,9 @@ function renderWeek() {
       let pM3 = 0; orders.forEach(o => { const v = calcM3(o); if (v) pM3 += v; });
       const ordersHtml = orders.length ? orders.map(o => `
         <div class="wk-o">
-          <div class="wk-o-top">${escapeHtml(o.uzsakovas || '—')}${o.uzsakymo_nr ? ' <span class="wk-o-nr">' + escapeHtml(o.uzsakymo_nr) + '</span>' : ''}</div>
-          <div style="font-size:11px;color:#555;margin-top:1px">${escapeHtml(o.produktas || '')}</div>
-          <div class="wk-o-meta">${badge(o.busena)} <span style="color:#8e8e93">${fmtM3(calcM3(o))} m³</span>${o.transportas ? ' · ' + escapeHtml(o.transportas) : ''}</div>
+          <div class="wk-o-top">${escapeHtml(o.produktas || '—')} <span style="font-weight:600;color:#1A7A4A">${calcM3(o) ? fmtM3(calcM3(o)) + ' m³' : ''}</span>${o.uzsakymo_nr ? ' <span class="wk-o-nr">' + escapeHtml(o.uzsakymo_nr) + '</span>' : ''}</div>
+          <div style="font-size:11px;color:#444;margin-top:1px;font-weight:600">${escapeHtml(o.uzsakovas || '—')}</div>
+          <div class="wk-o-meta">${badge(o.busena)}${o.transportas ? ' · ' + escapeHtml(o.transportas) : ''}</div>
           ${o.komentaras ? `<div class="wk-o-com">${escapeHtml(o.komentaras)}</div>` : ''}
           <div class="wk-o-veh">🚚 <input class="wk-veh-input" type="text" placeholder="automobilio info…"></div>
         </div>`).join('') : '<div class="wk-col-empty">—</div>';
