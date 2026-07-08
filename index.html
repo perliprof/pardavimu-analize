@@ -1546,7 +1546,7 @@ function renderCalendar(year, month) {
         : (o.busena === 'Pristatyta' || o.busena === 'Išsiųsta') ? 'cal-o-done'
         : isPastLoad(o) ? 'cal-o-overdue'
         : 'cal-o-pending';
-      return `<span class="cal-order ${oc}" title="${escapeHtml(o.uzsakovas + ' · ' + o.produktas + ' · ' + o.busena)}">${escapeHtml(o.uzsakovas)}</span>`;
+      return `<span class="cal-order ${oc}" title="${escapeHtml(o.uzsakovas + ' · ' + o.produktas + ' · ' + o.busena)}">${escapeHtml(o.uzsakovas)}<br><span style="opacity:0.75;font-size:9px">${escapeHtml(o.produktas||'')}</span></span>`;
     }).join('');
     const more = orders.length > MAX ? `<div class="cal-more">+${orders.length - MAX} dar</div>` : '';
 
@@ -1653,6 +1653,7 @@ function renderWeek() {
       const ordersHtml = orders.length ? orders.map(o => `
         <div class="wk-o">
           <div class="wk-o-top">${escapeHtml(o.uzsakovas || '—')}${o.uzsakymo_nr ? ' <span class="wk-o-nr">' + escapeHtml(o.uzsakymo_nr) + '</span>' : ''}</div>
+          <div style="font-size:11px;color:#555;margin-top:1px">${escapeHtml(o.produktas || '')}</div>
           <div class="wk-o-meta">${badge(o.busena)} <span style="color:#8e8e93">${fmtM3(calcM3(o))} m³</span>${o.transportas ? ' · ' + escapeHtml(o.transportas) : ''}</div>
           ${o.komentaras ? `<div class="wk-o-com">${escapeHtml(o.komentaras)}</div>` : ''}
           <div class="wk-o-veh">🚚 <input class="wk-veh-input" type="text" placeholder="automobilio info…"></div>
