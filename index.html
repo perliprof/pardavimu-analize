@@ -186,6 +186,15 @@ body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; co
 .clarif-btn:hover { background: #1A4F80; }
 .clarif-btn:disabled { background: #c7c7cc; cursor: default; }
 
+/* Custom autocomplete dropdown */
+#ac-drop { position:fixed;background:#fff;border:1px solid #d1d1d6;border-radius:10px;
+  box-shadow:0 4px 20px rgba(0,0,0,0.15);max-height:220px;overflow-y:auto;
+  z-index:99999;display:none;padding:4px 0; }
+#ac-drop .ac-item { padding:7px 14px;font-size:13px;cursor:pointer;
+  border-bottom:1px solid #f2f2f7;font-family:'Montserrat',sans-serif; }
+#ac-drop .ac-item:hover { background:#f2f2f7; }
+#ac-drop .ac-item:last-child { border-bottom:none; }
+
 /* New-order button */
 #new-order-btn {
   font-family: 'Montserrat', sans-serif; font-size: 13px; font-weight: 700;
@@ -1981,16 +1990,60 @@ async function confirmOrder(seka, btn) {
 
 /* ── Naujas užsakymas ── */
 function setupNewOrder(data) {
-  if (!WRITE_ENDPOINT) return; // mygtukas paslėptas kol nėra endpoint
+  if (!WRITE_ENDPOINT) return;
   document.getElementById('new-order-btn').style.display = '';
   fillDatalists();
+  _acInit('of-uzsakovas', () => _acClients);
+  _acInit('of-produktas', () => _acProducts);
 }
 function fillDatalists() {
   const src = FULL_DATA && FULL_DATA.length ? FULL_DATA : (ALL_DATA || []);
-  const clients  = [...new Set(src.map(d => d.uzsakovas).filter(Boolean))].sort();
-  const products = [...new Set(src.map(d => d.produktas).filter(Boolean))].sort();
-  document.getElementById('dl-clients').innerHTML  = clients.map(c => `<option value="${escapeHtml(c)}">`).join('');
-  document.getElementById('dl-products').innerHTML = products.map(p => `<option value="${escapeHtml(p)}">`).join('');
+  _acClients  = [...new Set(src.map(d => d.uzsakovas).filter(Boolean))].sort();
+  _acProducts = [...new Set(src.map(d => d.produktas).filter(Boolean))].sort();
+}
+
+/* ── Custom autocomplete ── */
+let _acDrop = null, _acClients = [], _acProducts = [];
+
+function _acEnsure() {
+  if (_acDrop) return;
+  _acDrop = document.createElement('div');
+  _acDrop.id = 'ac-drop';
+  document.body.appendChild(_acDrop);
+}
+
+function _acShow(inputEl, items) {
+  _acEnsure();
+  const q = inputEl.value.toLowerCase().trim();
+  const matched = q ? items.filter(s => s.toLowerCase().includes(q)) : items;
+  if (!matched.length) { _acDrop.style.display = 'none'; return; }
+  _acDrop.innerHTML = matched.slice(0, 60).map(s =>
+    `<div class="ac-item">${escapeHtml(s)}</div>`).join('');
+  _acDrop.querySelectorAll('.ac-item').forEach((el, i) => {
+    el.addEventListener('mousedown', e => e.preventDefault());
+    el.addEventListener('click', () => {
+      inputEl.value = matched[i];
+      inputEl.dispatchEvent(new Event('input'));
+      _acDrop.style.display = 'none';
+      inputEl.focus();
+    });
+  });
+  const r = inputEl.getBoundingClientRect();
+  _acDrop.style.left  = r.left + 'px';
+  _acDrop.style.top   = (r.bottom + 4) + 'px';
+  _acDrop.style.width = Math.max(r.width, 220) + 'px';
+  _acDrop.style.display = 'block';
+}
+
+function _acInit(inputId, getList) {
+  const el = document.getElementById(inputId);
+  if (!el || el._acInited) return;
+  el._acInited = true;
+  el.removeAttribute('list');
+  el.autocomplete = 'off';
+  el.addEventListener('focus', () => _acShow(el, getList()));
+  el.addEventListener('input', () => _acShow(el, getList()));
+  el.addEventListener('blur',  () => setTimeout(() => { if (_acDrop) _acDrop.style.display = 'none'; }, 200));
 }
 
 let EDIT_SEKA = null;     // jei redaguojam — čia užsakymo seka; jei naujas — null
