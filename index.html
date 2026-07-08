@@ -306,6 +306,21 @@ body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; co
 .charts-3 { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 1.1rem; }
 @media (max-width: 1100px) { .charts-3 { grid-template-columns: 1fr; } }
 
+/* CRM kortelė */
+.crm-card { border-left: 4px solid #1A4F80 !important; }
+.crm-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem 1.2rem; margin-top: 0.7rem; }
+@media (max-width: 700px) { .crm-grid { grid-template-columns: 1fr; } }
+.crm-field { }
+.crm-field.crm-full { grid-column: 1 / -1; }
+.crm-label { font-size: 10px; font-weight: 700; color: #8e8e93; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; }
+.crm-val { font-size: 13px; color: #1a1a2e; line-height: 1.45; white-space: pre-wrap; word-break: break-word; }
+.crm-val a { color: #2B6CB0; text-decoration: none; }
+.crm-val a:hover { text-decoration: underline; }
+.crm-history { max-height: 160px; overflow-y: auto; background: #f9f9fb; border-radius: 8px; padding: 8px 10px; font-size: 12.5px; }
+.crm-no-match { background: white; border-radius: 12px; padding: 0.8rem 1rem; border-left: 4px solid #e5e5ea; color: #8e8e93; font-size: 13px; margin-bottom: 1.1rem; }
+.crm-badge { display: inline-block; font-size: 10px; font-weight: 700; background: #e8f0fe; color: #1A4F80; border-radius: 5px; padding: 1px 6px; margin-left: 5px; vertical-align: middle; }
+.crm-only-row td { color: #6e6e73; }
+
 /* Savaitės krovinių planas */
 #week-overlay { display: none; position: fixed; inset: 0; z-index: 520; background: #f0f2f5; flex-direction: column; overflow-y: auto; }
 #week-overlay.open { display: flex; }
@@ -537,6 +552,7 @@ body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; co
             <tr>
               <th class="sortable" onclick="sortCustomers('rank')">#</th>
               <th class="sortable" onclick="sortCustomers('name')">Klientas</th>
+              <th>Šalis</th>
               <th class="sortable" onclick="sortCustomers('first')">Pirmas užs.</th>
               <th class="sortable sort-desc" onclick="sortCustomers('last')">Paskutinis užs.</th>
               <th class="sortable" onclick="sortCustomers('ago')">Prieš (d.)</th>
@@ -546,6 +562,18 @@ body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; co
             </tr>
           </thead>
           <tbody id="cust-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card" id="crm-only-card" style="display:none">
+      <div class="card-title">📋 CRM — potencialūs ir kiti kontaktai
+        <span class="card-title-sub" id="crm-only-count"></span>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="data-table">
+          <thead><tr><th>#</th><th>Įmonė</th><th>Šalis</th><th>Sektorius</th><th>Produktas</th><th>Ryšys</th><th>Paskutinis kontaktas</th></tr></thead>
+          <tbody id="crm-only-tbody"></tbody>
         </table>
       </div>
     </div>
@@ -562,6 +590,7 @@ body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; co
   </div>
   <div class="ov-body" style="max-width:1500px">
     <div class="cust-stat-grid" id="customer-stats"></div>
+    <div id="customer-crm"></div>
     <div class="card">
       <div class="card-title">Visi užsakymai <span class="card-title-sub" id="customer-orders-count"></span></div>
       <div style="overflow-x:auto">
@@ -1359,9 +1388,11 @@ function renderCustomerTable(rows) {
     const agoCls = r.ago === null ? '' : r.ago <= 30 ? 'db-ok' : r.ago <= 90 ? 'db-warn' : 'db-alert';
     const agoHtml = r.ago !== null ? `<span class="days-badge ${agoCls}">${r.ago}d.</span>` : '—';
     const pendHtml = r.pending > 0 ? `<span style="font-weight:700;color:#C47A00">${r.pending}</span>` : `<span style="color:#c7c7cc">0</span>`;
+    const crm = findCRM(r.name);
     return `<tr style="cursor:pointer" onclick="openCustomer('${jsAttr(r.name)}')">
       <td style="color:#8e8e93;font-size:11px">${i + 1}</td>
-      <td style="font-weight:700" class="clickable-name">${escapeHtml(r.name)}</td>
+      <td style="font-weight:700" class="clickable-name">${escapeHtml(r.name)}${crm ? '<span class="crm-badge">CRM</span>' : ''}</td>
+      <td style="font-size:12px;color:#6e6e73">${escapeHtml(crm ? crm.salis : '—')}</td>
       <td style="font-size:12px;color:#8e8e93">${escapeHtml(r.first || '—')}</td>
       <td style="font-size:12px;font-weight:600">${escapeHtml(r.last || '—')}</td>
       <td>${agoHtml}</td>
@@ -1410,6 +1441,34 @@ function sortCustomers(key) {
 }
 
 function applyCustomerFilter() { renderCustomerTable(ALL_CUSTOMERS); }
+
+function renderCRMOnly() {
+  if (!CRM_DATA.length) return;
+  const orderNames = new Set(ALL_CUSTOMERS.map(r => r.name.toLowerCase().replace(/\s+/g, ' ')));
+  const onlyCRM = CRM_DATA.filter(c => {
+    const q = c.imone.toLowerCase().replace(/\s+/g, ' ');
+    return !orderNames.has(q) && ![...orderNames].some(n => n.includes(q) || q.includes(n));
+  });
+  const card = document.getElementById('crm-only-card');
+  if (!onlyCRM.length) { card.style.display = 'none'; return; }
+  card.style.display = '';
+  document.getElementById('crm-only-count').textContent = onlyCRM.length + ' kontaktų';
+  document.getElementById('crm-only-tbody').innerHTML = onlyCRM.map((c, i) => `
+    <tr class="crm-only-row" style="cursor:pointer" onclick="openCRMCard(${i + '_crm_only'})">
+      <td style="color:#8e8e93;font-size:11px">${i + 1}</td>
+      <td style="font-weight:700">${escapeHtml(c.imone)}</td>
+      <td style="font-size:12px">${escapeHtml(c.salis)}</td>
+      <td style="font-size:12px">${escapeHtml(c.sektorius)}</td>
+      <td style="font-size:12px">${escapeHtml(c.produktas)}</td>
+      <td style="font-size:12px;color:#6e6e73">${escapeHtml(c.rysys)}</td>
+      <td style="font-size:12px">${escapeHtml(c.kada)}</td>
+    </tr>`).join('');
+  // store ref for click
+  window._crmOnly = onlyCRM;
+  document.querySelectorAll('#crm-only-tbody tr').forEach((tr, i) => {
+    tr.onclick = () => openCRMCardDirect(window._crmOnly[i]);
+  });
+}
 
 function initCustomerTable(data) {
   ALL_CUSTOMERS = buildCustomerRows(data);
@@ -1881,6 +1940,7 @@ function renderWeek() {
 function openClients() {
   document.getElementById('clients-count').textContent =
     (ALL_CUSTOMERS ? ALL_CUSTOMERS.length : 0) + ' klientų · ' + viewYear + ' m.';
+  renderCRMOnly();
   document.getElementById('clients-overlay').classList.add('open');
   document.body.style.overflow = 'hidden';
   window.scrollTo(0, 0);
@@ -1942,6 +2002,71 @@ function openCustomer(name) {
     </tr>`;
   }).join('') || '<tr><td colspan="9" style="text-align:center;color:#8e8e93;padding:2rem">Nėra užsakymų šiais metais</td></tr>';
 
+  // CRM sekcija
+  const crm = findCRM(name);
+  const crmEl = document.getElementById('customer-crm');
+  if (crm) {
+    const row = (label, val, full) => val ? `
+      <div class="crm-field${full ? ' crm-full' : ''}">
+        <div class="crm-label">${label}</div>
+        <div class="crm-val">${val}</div>
+      </div>` : '';
+    crmEl.innerHTML = `<div class="card crm-card" style="margin-bottom:1.1rem">
+      <div class="card-title">📋 CRM informacija
+        <span class="card-title-sub">${escapeHtml(crm.salis)}${crm.sektorius ? ' · ' + escapeHtml(crm.sektorius) : ''}</span>
+      </div>
+      <div class="crm-grid">
+        ${row('📍 Adresas', escapeHtml(crm.adresas))}
+        ${row('📦 Domina produktas', escapeHtml(crm.produktas))}
+        ${row('💡 Iš kur gautas kontaktas', escapeHtml(crm.isKur))}
+        ${row('📅 Paskutinis kontaktas', escapeHtml(crm.kada))}
+        ${crm.kontaktas ? `<div class="crm-field crm-full"><div class="crm-label">📞 Kontaktai</div><div class="crm-val">${formatContacts(crm.kontaktas)}</div></div>` : ''}
+        ${row('🔗 Ryšys / susijusios įmonės', escapeHtml(crm.rysys), true)}
+        ${row('📝 Pastabos (poreikis)', escapeHtml(crm.pastabos), true)}
+        ${crm.kas ? `<div class="crm-field crm-full"><div class="crm-label">💬 Kas buvo kalbėta</div><div class="crm-val crm-history">${escapeHtml(crm.kas)}</div></div>` : ''}
+        ${row('✅ Kas buvo nutarta', escapeHtml(crm.nutarta), true)}
+      </div>
+    </div>`;
+  } else {
+    crmEl.innerHTML = CRM_DATA.length
+      ? `<div class="crm-no-match">⚠️ Šis klientas nerasta CRM sąraše: <strong>${escapeHtml(name)}</strong></div>`
+      : '';
+  }
+
+  document.getElementById('customer-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  window.scrollTo(0, 0);
+}
+
+function openCRMCardDirect(crm) {
+  CURRENT_CUSTOMER = null;
+  document.getElementById('customer-title').textContent = crm.imone;
+  document.getElementById('customer-sub').textContent = crm.salis || '';
+  document.getElementById('customer-stats').innerHTML = `
+    <div class="cust-stat" style="border-color:#8e8e93"><div class="s-label">Sektorius</div><div class="s-value" style="font-size:16px">${escapeHtml(crm.sektorius || '—')}</div></div>
+    <div class="cust-stat" style="border-color:#8e8e93"><div class="s-label">Domina produktas</div><div class="s-value" style="font-size:14px">${escapeHtml(crm.produktas || '—')}</div></div>
+    <div class="cust-stat" style="border-color:#D97706"><div class="s-label">Paskutinis kontaktas</div><div class="s-value" style="font-size:14px">${escapeHtml(crm.kada || '—')}</div></div>
+  `;
+  const row = (label, val, full) => val ? `
+    <div class="crm-field${full ? ' crm-full' : ''}">
+      <div class="crm-label">${label}</div>
+      <div class="crm-val">${val}</div>
+    </div>` : '';
+  document.getElementById('customer-crm').innerHTML = `<div class="card crm-card" style="margin-bottom:1.1rem">
+    <div class="card-title">📋 CRM informacija <span class="crm-badge">Potencialus</span></div>
+    <div class="crm-grid">
+      ${row('📍 Adresas', escapeHtml(crm.adresas))}
+      ${row('💡 Iš kur gautas kontaktas', escapeHtml(crm.isKur))}
+      ${crm.kontaktas ? `<div class="crm-field crm-full"><div class="crm-label">📞 Kontaktai</div><div class="crm-val">${formatContacts(crm.kontaktas)}</div></div>` : ''}
+      ${row('🔗 Ryšys / susijusios įmonės', escapeHtml(crm.rysys), true)}
+      ${row('📝 Pastabos (poreikis)', escapeHtml(crm.pastabos), true)}
+      ${crm.kas ? `<div class="crm-field crm-full"><div class="crm-label">💬 Kas buvo kalbėta</div><div class="crm-val crm-history">${escapeHtml(crm.kas)}</div></div>` : ''}
+      ${row('✅ Kas buvo nutarta', escapeHtml(crm.nutarta), true)}
+    </div>
+  </div>`;
+  document.getElementById('customer-orders-count').textContent = 'nėra užsakymų';
+  document.getElementById('customer-orders-tbody').innerHTML =
+    '<tr><td colspan="9" style="text-align:center;color:#8e8e93;padding:2rem">Šis kontaktas dar neturi užsakymų</td></tr>';
   document.getElementById('customer-overlay').classList.add('open');
   document.body.style.overflow = 'hidden';
   window.scrollTo(0, 0);
@@ -2282,6 +2407,9 @@ async function tryLoad() {
     document.getElementById('loading').style.display = '';
   }
 
+  // CRM kraunam fone (ne blokuojam)
+  loadCRM();
+
   // Fone kraunam šviežius duomenis
   try {
     const data = await loadData();
@@ -2317,7 +2445,63 @@ tryLoad();
    GAMYBOS ANALIZĖ — overlay
    Skaito gamybos-lenta CSV (tas pats šaltinis)
    ══════════════════════════════════════════════ */
-const GAMYBA_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTRGeNdfu4A-DOF4jONXpTCKaSkE1uUpLXa94HHkNPw1mhIoWHNcKwhvoSL22Nh48DEV2DDMZ1KXprI/pub?output=csv';
+const GAMYBA_URL   = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTRGeNdfu4A-DOF4jONXpTCKaSkE1uUpLXa94HHkNPw1mhIoWHNcKwhvoSL22Nh48DEV2DDMZ1KXprI/pub?output=csv';
+const CLIENTS_URL  = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQQ277gvKWxe3wt8BmchAhuiU-gOwrNLtXacsST0-n7Nds9i5eZ7kkLb5DUTRox4Q/pub?gid=690985131&single=true&output=csv';
+
+let CRM_DATA = [];
+
+async function loadCRM() {
+  try {
+    const res = await fetch(CLIENTS_URL + '&t=' + Date.now());
+    const text = await res.text();
+    const rows = parseCSV(text);
+    if (rows.length < 2) return;
+    const hdr = rows[0];
+    const fi = name => hdr.findIndex(h => h.trim() === name.trim());
+    const iSalis    = fi('Šalis');
+    const iImone    = fi('Įmonė');
+    const iAdresas  = fi('Adresas');
+    const iSekt     = fi('Sektorius');
+    const iProd     = fi('Produktas');
+    const iKont     = fi('Kontaktas su tel nr, el paštu');
+    const iPast     = fi('Pastabos apie klientą (kas domina, metinis poreikis)');
+    const iIsKur    = fi('iš kur gautas kontaktas');
+    const iRysys    = fi('Ryšys');
+    const iKada     = fi('Kada bendrauta paskutinį kart');
+    const iKas      = fi('Kas buvo kalbėta, turinys kuo daugiau, NUOLAT PILDOMA INFO');
+    const iNutarta  = fi('Kas buvo nutarta');
+    CRM_DATA = rows.slice(1).filter(r => r[iImone] && r[iImone].trim()).map(r => ({
+      salis:    (r[iSalis]   || '').trim(),
+      imone:    r[iImone].trim(),
+      adresas:  (r[iAdresas] || '').trim(),
+      sektorius:(r[iSekt]    || '').trim(),
+      produktas:(r[iProd]    || '').trim(),
+      kontaktas:(r[iKont]    || '').trim(),
+      pastabos: (r[iPast]    || '').trim(),
+      isKur:    (r[iIsKur]   || '').trim(),
+      rysys:    (r[iRysys]   || '').trim(),
+      kada:     (r[iKada]    || '').trim(),
+      kas:      (r[iKas]     || '').trim(),
+      nutarta:  (iNutarta >= 0 ? r[iNutarta] : '') || '',
+    }));
+  } catch(e) { console.warn('CRM load failed', e); }
+}
+
+function findCRM(name) {
+  if (!name || !CRM_DATA.length) return null;
+  const q = name.trim().toLowerCase().replace(/\s+/g, ' ');
+  return CRM_DATA.find(c => c.imone.toLowerCase().replace(/\s+/g, ' ') === q)
+      || CRM_DATA.find(c => c.imone.toLowerCase().replace(/\s+/g, ' ').includes(q))
+      || CRM_DATA.find(c => q.includes(c.imone.toLowerCase().replace(/\s+/g, ' ')))
+      || null;
+}
+
+function formatContacts(str) {
+  if (!str) return '';
+  return escapeHtml(str)
+    .replace(/([\+\d][\d\s\-\(\)]{6,}[\d])/g, '<a href="tel:$1">$1</a>')
+    .replace(/([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,})/g, '<a href="mailto:$1">$1</a>');
+}
 let GAMYBA_DATA = null;
 let gamYear, gamMonth, gamMode = 0;
 
