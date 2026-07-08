@@ -2003,34 +2003,44 @@ function openCustomer(name) {
   }).join('') || '<tr><td colspan="9" style="text-align:center;color:#8e8e93;padding:2rem">Nėra užsakymų šiais metais</td></tr>';
 
   // CRM sekcija
-  const crm = findCRM(name);
   const crmEl = document.getElementById('customer-crm');
-  if (crm) {
-    const row = (label, val, full) => val ? `
-      <div class="crm-field${full ? ' crm-full' : ''}">
-        <div class="crm-label">${label}</div>
-        <div class="crm-val">${val}</div>
-      </div>` : '';
-    crmEl.innerHTML = `<div class="card crm-card" style="margin-bottom:1.1rem">
-      <div class="card-title">📋 CRM informacija
-        <span class="card-title-sub">${escapeHtml(crm.salis)}${crm.sektorius ? ' · ' + escapeHtml(crm.sektorius) : ''}</span>
-      </div>
-      <div class="crm-grid">
-        ${row('📍 Adresas', escapeHtml(crm.adresas))}
-        ${row('📦 Domina produktas', escapeHtml(crm.produktas))}
-        ${row('💡 Iš kur gautas kontaktas', escapeHtml(crm.isKur))}
-        ${row('📅 Paskutinis kontaktas', escapeHtml(crm.kada))}
-        ${crm.kontaktas ? `<div class="crm-field crm-full"><div class="crm-label">📞 Kontaktai</div><div class="crm-val">${formatContacts(crm.kontaktas)}</div></div>` : ''}
-        ${row('🔗 Ryšys / susijusios įmonės', escapeHtml(crm.rysys), true)}
-        ${row('📝 Pastabos (poreikis)', escapeHtml(crm.pastabos), true)}
-        ${crm.kas ? `<div class="crm-field crm-full"><div class="crm-label">💬 Kas buvo kalbėta</div><div class="crm-val crm-history">${escapeHtml(crm.kas)}</div></div>` : ''}
-        ${row('✅ Kas buvo nutarta', escapeHtml(crm.nutarta), true)}
-      </div>
-    </div>`;
+  const fillCRM = (customerName) => {
+    const crm = findCRM(customerName);
+    if (crm) {
+      const row = (label, val, full) => val ? `
+        <div class="crm-field${full ? ' crm-full' : ''}">
+          <div class="crm-label">${label}</div>
+          <div class="crm-val">${val}</div>
+        </div>` : '';
+      crmEl.innerHTML = `<div class="card crm-card" style="margin-bottom:1.1rem">
+        <div class="card-title">📋 CRM informacija
+          <span class="card-title-sub">${escapeHtml(crm.salis)}${crm.sektorius ? ' · ' + escapeHtml(crm.sektorius) : ''}</span>
+        </div>
+        <div class="crm-grid">
+          ${row('📍 Adresas', escapeHtml(crm.adresas))}
+          ${row('📦 Domina produktas', escapeHtml(crm.produktas))}
+          ${row('💡 Iš kur gautas kontaktas', escapeHtml(crm.isKur))}
+          ${row('📅 Paskutinis kontaktas', escapeHtml(crm.kada))}
+          ${crm.kontaktas ? `<div class="crm-field crm-full"><div class="crm-label">📞 Kontaktai</div><div class="crm-val">${formatContacts(crm.kontaktas)}</div></div>` : ''}
+          ${row('🔗 Ryšys / susijusios įmonės', escapeHtml(crm.rysys), true)}
+          ${row('📝 Pastabos (poreikis)', escapeHtml(crm.pastabos), true)}
+          ${crm.kas ? `<div class="crm-field crm-full"><div class="crm-label">💬 Kas buvo kalbėta</div><div class="crm-val crm-history">${escapeHtml(crm.kas)}</div></div>` : ''}
+          ${row('✅ Kas buvo nutarta', escapeHtml(crm.nutarta), true)}
+        </div>
+      </div>`;
+    } else {
+      crmEl.innerHTML = CRM_DATA.length
+        ? `<div class="crm-no-match">⚠️ CRM sąraše nerasta: <strong>${escapeHtml(customerName)}</strong></div>`
+        : '';
+    }
+  };
+
+  if (CRM_DATA.length > 0) {
+    fillCRM(name);
   } else {
-    crmEl.innerHTML = CRM_DATA.length
-      ? `<div class="crm-no-match">⚠️ Šis klientas nerasta CRM sąraše: <strong>${escapeHtml(name)}</strong></div>`
-      : '';
+    // CRM dar neužkrautas — krauname dabar ir atnaujiname kortelę kai baigs
+    crmEl.innerHTML = '<div class="crm-no-match" style="color:#8e8e93">⏳ Kraunami CRM duomenys…</div>';
+    loadCRM().then(() => fillCRM(name));
   }
 
   document.getElementById('customer-overlay').classList.add('open');
