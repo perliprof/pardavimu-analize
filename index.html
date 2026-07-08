@@ -1826,10 +1826,12 @@ async function confirmOrder(seka, btn) {
 function setupNewOrder(data) {
   if (!WRITE_ENDPOINT) return; // mygtukas paslėptas kol nėra endpoint
   document.getElementById('new-order-btn').style.display = '';
-
-  // Datalist'ai: klientai ir produktai
-  const clients  = [...new Set(data.map(d => d.uzsakovas).filter(Boolean))].sort();
-  const products = [...new Set(data.map(d => d.produktas).filter(Boolean))].sort();
+  fillDatalists();
+}
+function fillDatalists() {
+  const src = FULL_DATA && FULL_DATA.length ? FULL_DATA : (ALL_DATA || []);
+  const clients  = [...new Set(src.map(d => d.uzsakovas).filter(Boolean))].sort();
+  const products = [...new Set(src.map(d => d.produktas).filter(Boolean))].sort();
   document.getElementById('dl-clients').innerHTML  = clients.map(c => `<option value="${escapeHtml(c)}">`).join('');
   document.getElementById('dl-products').innerHTML = products.map(p => `<option value="${escapeHtml(p)}">`).join('');
 }
