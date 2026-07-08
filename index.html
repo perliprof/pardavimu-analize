@@ -2250,12 +2250,13 @@ async function loadGamyba() {
         date:  o.date||'', shift: parseInt(o['pamaina']||o['shift'])||0,
         type:  o['pamaina tip']||o['type']||'',
         m3:    M3.reduce((s,k) => s+n(o[k]),0),
-        smelis:    n(o['s kg']),
-        krituliai: n(o['krituliai']||o['krit']) + n(o['e maisai']) + n(o['e bb']),
-        waste:     n(o['s kg']) + n(o['krituliai']||o['krit']) + n(o['e maisai']) + n(o['e bb']),
-        gas:       n(o['dujos m3']||o['gas']),
-        kwh:       n(o['elektra kwh']||o['kwh']),
-        raw:       ['0 zaliava kg','1 zaliava kg','2 zaliava kg','9 zaliava kg','x zaliava kg'].reduce((s,k)=>s+n(o[k]),0),
+        smelis:     n(o['s kg']),
+        krituliai:  n(o['krituliai']||o['krit']),
+        e_atliekos: n(o['e kg']) + n(o['e bb kg']) + n(o['d kg']),
+        waste:      n(o['s kg']) + n(o['krituliai']||o['krit']) + n(o['e kg']) + n(o['e bb kg']) + n(o['d kg']),
+        gas:        n(o['dujos m3']||o['gas']),
+        kwh:        n(o['elektra kwh']||o['kwh']),
+        raw:        ['0 zaliava kg','1 zaliava kg','2 zaliava kg','9 zaliava kg','x zaliava kg'].reduce((s,k)=>s+n(o[k]),0),
         prods,
       };
     }).filter(d => d.date && d.shift > 0);
@@ -2345,25 +2346,28 @@ function renderGamybaAnnual() {
     };
   });
 
-  // Žaliavų suvestinė po grafiku
-  const MONTHS_FULL = ['Sausis','Vasaris','Kovas','Balandis','Gegužė','Birželis','Liepa','Rugpjūtis','Rugsėjis','Spalis','Lapkritis','Gruodis'];
-  const rawByMonth = byMonth.map(ms => ms.reduce((s,d) => s+d.raw, 0));
-  const totRaw = rawByMonth.reduce((s,v) => s+v, 0);
-  const maxRaw = Math.max(...rawByMonth, 1);
-  document.getElementById('gam-raw-summary').innerHTML = totRaw > 0 ? `
-    <div style="border-top:1px solid #e5e5ea;padding-top:0.85rem">
-      <div style="font-size:12px;font-weight:800;color:#7A5200;margin-bottom:0.6rem">
-        Žaliavos · bendras sunaudojimas ${yr} m. — <span style="font-size:14px">${totRaw.toLocaleString('lt-LT')} kg</span>
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(12,1fr);gap:3px;align-items:end;height:50px">
-        ${rawByMonth.map((v,i) => v > 0 ? `<div title="${MONTHS_FULL[i]}: ${v.toLocaleString('lt-LT')} kg"
-          style="background:#D97706;border-radius:3px 3px 0 0;height:${Math.round(v/maxRaw*100)}%;min-height:3px;cursor:default"></div>`
-          : `<div></div>`).join('')}
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(12,1fr);gap:3px;margin-top:3px">
-        ${rawByMonth.map((v,i) => `<div style="font-size:9px;color:#8e8e93;text-align:center">${v>0?Math.round(v/1000)+'t':''}</div>`).join('')}
-      </div>
-    </div>` : '';
+  // Suvestinė po grafiku
+  const annData = GAMYBA_DATA.filter(d => d.date.startsWith(yr+''));
+  const totM3ann    = annData.reduce((s,d)=>s+d.m3,0);
+  const totDays     = [...new Set(annData.map(d=>d.date))].length;
+  const totKritSm   = annData.reduce((s,d)=>s+d.krituliai+d.smelis,0);
+  const totEAtl     = annData.reduce((s,d)=>s+d.e_atliekos,0);
+  const totRawAnn   = annData.reduce((s,d)=>s+d.raw,0);
+  const fmt = v => v > 0 ? v.toLocaleString('lt-LT') : '—';
+  const summItems = [
+    { label:'Iš viso m³',           val: totM3ann>0  ? totM3ann.toFixed(1)+' m³'  : '—', color:'#0A2342' },
+    { label:'Darbo dienos',          val: totDays || '—',                                  color:'#1A4F80' },
+    { label:'Krituliai + smėlis',    val: totKritSm>0 ? fmt(Math.round(totKritSm))+' kg' : '—', color:'#C0392B' },
+    { label:'Atliekos E+D kg',       val: totEAtl>0   ? fmt(Math.round(totEAtl))+' kg'   : '—', color:'#E07055' },
+    { label:'Sunaudota žaliava',     val: totRawAnn>0 ? fmt(Math.round(totRawAnn))+' kg' : '—', color:'#7A5200' },
+  ];
+  document.getElementById('gam-raw-summary').innerHTML = `
+    <div style="border-top:1px solid #e5e5ea;padding-top:0.9rem;display:grid;grid-template-columns:repeat(5,1fr);gap:0.6rem">
+      ${summItems.map(k=>`<div style="background:#f8f8f8;border-radius:10px;padding:0.65rem 0.8rem;border-top:3px solid ${k.color}">
+        <div style="font-size:10px;font-weight:700;color:#6e6e73;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:4px">${k.label}</div>
+        <div style="font-size:15px;font-weight:800;color:${k.color}">${k.val}</div>
+      </div>`).join('')}
+    </div>`;
 
   mkChart('gam-annual-chart', {
     type: 'line',
