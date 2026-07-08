@@ -714,6 +714,7 @@ body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; co
         </div>
         <div id="gam-toggles" style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-bottom:0.9rem"></div>
         <div style="height:300px"><canvas id="gam-annual-chart"></canvas></div>
+        <div id="gam-raw-summary" style="margin-top:1rem"></div>
       </div>
 
       <!-- KPI -->
@@ -2343,6 +2344,26 @@ function renderGamybaAnnual() {
       borderWidth: 2, pointRadius: 3, tension: 0.3, fill: false,
     };
   });
+
+  // Žaliavų suvestinė po grafiku
+  const MONTHS_FULL = ['Sausis','Vasaris','Kovas','Balandis','Gegužė','Birželis','Liepa','Rugpjūtis','Rugsėjis','Spalis','Lapkritis','Gruodis'];
+  const rawByMonth = byMonth.map(ms => ms.reduce((s,d) => s+d.raw, 0));
+  const totRaw = rawByMonth.reduce((s,v) => s+v, 0);
+  const maxRaw = Math.max(...rawByMonth, 1);
+  document.getElementById('gam-raw-summary').innerHTML = totRaw > 0 ? `
+    <div style="border-top:1px solid #e5e5ea;padding-top:0.85rem">
+      <div style="font-size:12px;font-weight:800;color:#7A5200;margin-bottom:0.6rem">
+        Žaliavos · bendras sunaudojimas ${yr} m. — <span style="font-size:14px">${totRaw.toLocaleString('lt-LT')} kg</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(12,1fr);gap:3px;align-items:end;height:50px">
+        ${rawByMonth.map((v,i) => v > 0 ? `<div title="${MONTHS_FULL[i]}: ${v.toLocaleString('lt-LT')} kg"
+          style="background:#D97706;border-radius:3px 3px 0 0;height:${Math.round(v/maxRaw*100)}%;min-height:3px;cursor:default"></div>`
+          : `<div></div>`).join('')}
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(12,1fr);gap:3px;margin-top:3px">
+        ${rawByMonth.map((v,i) => `<div style="font-size:9px;color:#8e8e93;text-align:center">${v>0?Math.round(v/1000)+'t':''}</div>`).join('')}
+      </div>
+    </div>` : '';
 
   mkChart('gam-annual-chart', {
     type: 'line',
