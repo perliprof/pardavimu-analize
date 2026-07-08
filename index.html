@@ -2635,25 +2635,39 @@ async function loadCRM() {
 }
 
 function _normN(s) {
-  return s.toLowerCase().replace(/[().,;:'"'''""\/\\e\.inh\.]/gi, ' ').replace(/\s+/g, ' ').trim();
+  return s.toLowerCase()
+    .replace(/\n|\r/g, ' ')
+    // visi kabutės variantai (ASCII ir Unicode)
+    .replace(/[„""“”„‟‘’'`´'']/g, '')
+    // du kableliai (,,) kaip kabutė
+    .replace(/,,/g, '')
+    // skyrybos ženklai → tarpas
+    .replace(/[().,;:\\/]/g, ' ')
+    // teisinės formos sutrumpinimai → tarpas
+    .replace(/\b(e\.?inh|sp\.?\s?z\.?\s?o\.?\s?o|s\.?\s?r\.?\s?l|s\.?\s?p\.?\s?a|s\.?\s?a\.?\s?u|s\.?\s?a|gmbh|s\.?\s?l|llc|ltd|inc|ou|oü|uab|sia|srl|bvba|bv|nv|as|ab|mb|oy|kg|ag|ek)\b\.?/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
+
 function findAllCRM(name) {
   if (!name || !CRM_DATA.length) return [];
   const q  = _normN(name);
   const qw = q.split(' ').filter(w => w.length > 2);
   const seen = new Set(), results = [];
   const add = arr => arr.forEach(c => { if (!seen.has(c.imone)) { seen.add(c.imone); results.push(c); } });
-  // 1. tikslus
+  // 1. tikslus sutapimas po normalizacijos
   add(CRM_DATA.filter(c => _normN(c.imone) === q));
-  // 2. vienas apima kitą (po normalizacijos)
+  // 2. vienas apima kitą
   add(CRM_DATA.filter(c => { const cn = _normN(c.imone); return cn.includes(q) || q.includes(cn); }));
-  // 3. žodžių sutapimas ≥ 60% (kai skliaustai ir priesagos skiriasi)
-  add(CRM_DATA.filter(c => {
-    if (!qw.length) return false;
-    const cn = _normN(c.imone);
-    const hit = qw.filter(w => cn.includes(w)).length;
-    return hit >= Math.max(1, Math.ceil(qw.length * 0.6));
-  }));
+  // 3. žodžių sutapimas ≥ 60% (min 2 žodžiai kai ieškoma frazė ilga)
+  if (qw.length >= 2) {
+    add(CRM_DATA.filter(c => {
+      const cn = _normN(c.imone);
+      const cnw = cn.split(' ').filter(w => w.length > 2);
+      const hit = qw.filter(w => cn.includes(w)).length;
+      return hit >= Math.max(2, Math.ceil(qw.length * 0.6));
+    }));
+  }
   return results;
 }
 
