@@ -704,6 +704,9 @@ body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; co
         <label class="om-field">Krovimo data
           <input type="date" id="of-krovimo-data">
         </label>
+        <label class="om-field">Krovimo laikas
+          <input type="time" id="of-krovimo-laikas">
+        </label>
         <label class="om-field">Užsakymo nr.
           <input type="text" id="of-nr" autocomplete="off" placeholder="Nr. (arba „3BB")" oninput="updateM3Suggestion()">
         </label>
@@ -1190,7 +1193,7 @@ function renderKPIs(data) {
 
   const pending     = data.filter(isNeivykdyta).length;
   const overdue     = data.filter(isVeluoja).length;
-  const todayLoad   = data.filter(d => d.krovimo_data === today).length;
+  const todayLoad   = data.filter(d => (d.krovimo_data || '').startsWith(today)).length;
   const thisMonthN  = data.filter(d => d.uzsakymo_data.startsWith(thisM)).length;
   const thisWeekN   = data.filter(d => d.uzsakymo_data >= weekStartStr && d.uzsakymo_data <= today).length;
 
@@ -1360,7 +1363,7 @@ function renderTable(data) {
   const krovFrom= document.getElementById('sf-krov-from').value;
   const krovTo  = document.getElementById('sf-krov-to').value;
   const now = new Date();
-  const isDate = s => /^\d{4}-\d{2}-\d{2}$/.test(s || '');
+  const isDate = s => /^\d{4}-\d{2}-\d{2}/.test(s || '');
 
   let f = [...data];
   if (statusF === 'pending') f = f.filter(isNeivykdyta);
@@ -1371,8 +1374,8 @@ function renderTable(data) {
   if (clientF)  f = f.filter(d => (d.uzsakovas || '').toLowerCase().includes(clientF));
   if (dateFrom) f = f.filter(d => d.uzsakymo_data && d.uzsakymo_data >= dateFrom);
   if (dateTo)   f = f.filter(d => d.uzsakymo_data && d.uzsakymo_data <= dateTo);
-  if (krovFrom) f = f.filter(d => isDate(d.krovimo_data) && d.krovimo_data >= krovFrom);
-  if (krovTo)   f = f.filter(d => isDate(d.krovimo_data) && d.krovimo_data <= krovTo);
+  if (krovFrom) f = f.filter(d => isDate(d.krovimo_data) && d.krovimo_data.slice(0,10) >= krovFrom);
+  if (krovTo)   f = f.filter(d => isDate(d.krovimo_data) && d.krovimo_data.slice(0,10) <= krovTo);
   if (search) f = f.filter(d =>
     [d.uzsakovas, d.produktas, d.uzsakymo_nr, d.komentaras].some(v => (v||'').toLowerCase().includes(search))
   );
@@ -1763,9 +1766,9 @@ function renderCalendar(year, month) {
   // Build order index: krovimo_data jei tiksli, kitaip uzsakymo_data
   const byDate = {};
   ALL_DATA.forEach(d => {
-    const precise = /^\d{4}-\d{2}-\d{2}$/;
-    const dt = precise.test(d.krovimo_data) ? d.krovimo_data
-              : precise.test(d.uzsakymo_data) ? d.uzsakymo_data : null;
+    const precise = /^\d{4}-\d{2}-\d{2}/;
+    const dt = precise.test(d.krovimo_data) ? d.krovimo_data.slice(0,10)
+              : precise.test(d.uzsakymo_data) ? d.uzsakymo_data.slice(0,10) : null;
     if (!dt) return;
     (byDate[dt] = byDate[dt] || []).push({ ...d, _calDate: dt, _isOrderDate: !precise.test(d.krovimo_data) });
   });
@@ -1916,13 +1919,13 @@ function exportCalendarCSV() {
   const prefix = calYear + '-' + String(calMonth + 1).padStart(2, '0');
   ALL_DATA
     .filter(d => {
-      const dt = precise.test(d.krovimo_data) ? d.krovimo_data
-               : precise.test(d.uzsakymo_data) ? d.uzsakymo_data : null;
+      const dt = precise.test(d.krovimo_data) ? d.krovimo_data.slice(0,10)
+               : precise.test(d.uzsakymo_data) ? d.uzsakymo_data.slice(0,10) : null;
       return dt && dt.startsWith(prefix);
     })
     .sort((a, b) => {
-      const dtA = precise.test(a.krovimo_data) ? a.krovimo_data : a.uzsakymo_data;
-      const dtB = precise.test(b.krovimo_data) ? b.krovimo_data : b.uzsakymo_data;
+      const dtA = precise.test(a.krovimo_data) ? a.krovimo_data.slice(0,10) : a.uzsakymo_data;
+      const dtB = precise.test(b.krovimo_data) ? b.krovimo_data.slice(0,10) : b.uzsakymo_data;
       return dtA.localeCompare(dtB) || (a.produktas || '').localeCompare(b.produktas || '');
     })
     .forEach(d => {
@@ -2406,7 +2409,9 @@ function openEditOrder(seka) {
   document.getElementById('of-produktas').value    = d.produktas || '';
   document.getElementById('of-busena').value       = ['','Gauta','Priimta','Vykdoma','Išsiųsta','Pristatyta','Atšaukta'].includes(d.busena) ? d.busena : '';
   document.getElementById('of-uzsakymo-data').value = /^\d{4}-\d{2}-\d{2}$/.test(d.uzsakymo_data) ? d.uzsakymo_data : '';
-  document.getElementById('of-krovimo-data').value = /^\d{4}-\d{2}-\d{2}$/.test(d.krovimo_data) ? d.krovimo_data : '';
+  const krovParts = (d.krovimo_data || '').split(' ');
+  document.getElementById('of-krovimo-data').value = /^\d{4}-\d{2}-\d{2}/.test(krovParts[0]) ? krovParts[0] : '';
+  document.getElementById('of-krovimo-laikas').value = krovParts[1] || '';
   document.getElementById('of-nr').value           = d.uzsakymo_nr || '';
   document.getElementById('of-transportas').value  = d.transportas || '';
   document.getElementById('of-komentaras').value   = d.komentaras || '';
@@ -2445,7 +2450,7 @@ async function submitNewOrder() {
     produktas:     document.getElementById('of-produktas').value.trim(),
     busena:        document.getElementById('of-busena').value,
     uzsakymo_data: document.getElementById('of-uzsakymo-data').value,
-    krovimo_data:  document.getElementById('of-krovimo-data').value,
+    krovimo_data:  (document.getElementById('of-krovimo-data').value + (document.getElementById('of-krovimo-laikas').value ? ' ' + document.getElementById('of-krovimo-laikas').value : '')),
     uzsakymo_nr:   document.getElementById('of-nr').value.trim(),
     transportas:   document.getElementById('of-transportas').value.trim(),
     m3:            document.getElementById('of-m3').value.trim(),
