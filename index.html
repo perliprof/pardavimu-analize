@@ -2330,17 +2330,19 @@ function setupNewOrder(data) {
   if (!WRITE_ENDPOINT) return;
   document.getElementById('new-order-btn').style.display = '';
   fillDatalists();
-  _acInit('of-uzsakovas', () => _acClients);
-  _acInit('of-produktas', () => _acProducts);
+  _acInit('of-uzsakovas',   () => _acClients);
+  _acInit('of-produktas',   () => _acProducts);
+  _acInit('of-transportas', () => _acTransports);
 }
 function fillDatalists() {
   const src = FULL_DATA && FULL_DATA.length ? FULL_DATA : (ALL_DATA || []);
-  _acClients  = [...new Set(src.map(d => d.uzsakovas).filter(Boolean))].sort();
-  _acProducts = [...new Set(src.map(d => d.produktas).filter(Boolean))].sort();
+  _acClients    = [...new Set(src.map(d => d.uzsakovas).filter(Boolean))].sort();
+  _acProducts   = [...new Set(src.map(d => d.produktas).filter(Boolean))].sort();
+  _acTransports = [...new Set(src.map(d => d.transportas).filter(Boolean))].sort();
 }
 
 /* ── Custom autocomplete ── */
-let _acDrop = null, _acClients = [], _acProducts = [];
+let _acDrop = null, _acClients = [], _acProducts = [], _acTransports = [];
 
 function _acEnsure() {
   if (_acDrop) return;
