@@ -1003,9 +1003,8 @@ function cleanCell(s) { return (s || '').replace(/[\r\n]+/g, ' ').trim(); }
 
 function parseDate(s) {
   if (!s) return null;
-  const base = s.slice(0, 10);
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(base)) return null;
-  const d = new Date(base + 'T12:00:00');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s.slice(0, 10))) return null;
+  const d = new Date(s.slice(0, 10) + 'T12:00:00');
   return isNaN(d) ? null : d;
 }
 
@@ -1086,17 +1085,20 @@ async function loadData() {
   const rows = parseCSV(out.csv || '');
   return rows.slice(1).map(v => {
     return {
-      seka:          cleanCell(v[0]),
-      uzsakymo_data: cleanCell(v[1]),
-      krovimo_data:  cleanCell(v[2]),
-      produktas:     cleanCell(v[3]),
-      uzsakovas:     cleanCell(v[4]),
-      uzsakymo_nr:   cleanCell(v[5]),
-      busena:        cleanCell(v[6]),
-      transportas:   cleanCell(v[7]),
-      m3:            cleanCell(v[8]),   // esama m³ reikšmė lentelėje (redagavimui)
-      komentaras:    cleanCell(v[9]),
-      uid:           cleanCell(v[10]),  // K stulpelis — unikalus ID (redagavimui)
+      seka:          cleanCell(v[0]),   // A
+      uzsakymo_data: cleanCell(v[1]),   // B
+      krovimo_data:  cleanCell(v[2]),   // C
+      laikas:        cleanCell(v[3]),   // D — krovimo laikas (atskiras stulpelis)
+      produktas:     cleanCell(v[4]),   // E
+      uzsakovas:     cleanCell(v[5]),   // F
+      uzsakymo_nr:   cleanCell(v[6]),   // G
+      busena:        cleanCell(v[7]),   // H
+      transportas:   cleanCell(v[8]),   // I
+      auto_info:     cleanCell(v[9]),   // J — auto info
+      m3:            cleanCell(v[10]),  // K
+      // v[11] = L (tekstinis stulpelis, neskaitome)
+      komentaras:    cleanCell(v[12]),  // M
+      uid:           cleanCell(v[13]),  // N — unikalus ID (redagavimui)
     };
   }).filter(d => d.uzsakovas || d.produktas);
 }
@@ -1368,7 +1370,7 @@ function renderTable(data) {
   const krovFrom= document.getElementById('sf-krov-from').value;
   const krovTo  = document.getElementById('sf-krov-to').value;
   const now = new Date();
-  const isDate = s => /^\d{4}-\d{2}-\d{2}/.test(s || '');
+  const isDate = s => /^\d{4}-\d{2}-\d{2}$/.test((s || '').slice(0,10));
 
   let f = [...data];
   if (statusF === 'pending') f = f.filter(isNeivykdyta);
@@ -1379,8 +1381,8 @@ function renderTable(data) {
   if (clientF)  f = f.filter(d => (d.uzsakovas || '').toLowerCase().includes(clientF));
   if (dateFrom) f = f.filter(d => d.uzsakymo_data && d.uzsakymo_data >= dateFrom);
   if (dateTo)   f = f.filter(d => d.uzsakymo_data && d.uzsakymo_data <= dateTo);
-  if (krovFrom) f = f.filter(d => isDate(d.krovimo_data) && d.krovimo_data.slice(0,10) >= krovFrom);
-  if (krovTo)   f = f.filter(d => isDate(d.krovimo_data) && d.krovimo_data.slice(0,10) <= krovTo);
+  if (krovFrom) f = f.filter(d => isDate(d.krovimo_data) && d.krovimo_data >= krovFrom);
+  if (krovTo)   f = f.filter(d => isDate(d.krovimo_data) && d.krovimo_data <= krovTo);
   if (search) f = f.filter(d =>
     [d.uzsakovas, d.produktas, d.uzsakymo_nr, d.komentaras].some(v => (v||'').toLowerCase().includes(search))
   );
@@ -1768,12 +1770,12 @@ function renderCalendar(year, month) {
   document.getElementById('cal-month-sel').value = month;
   document.getElementById('cal-year-sel').value  = year;
 
-  // Build order index: krovimo_data jei tiksli, kitaip uzsakymo_data
+  // Build order index: krovimo_data jei tiksli, kitaip uzsakymo_data (krovimo_data visada grynas data)
   const byDate = {};
   ALL_DATA.forEach(d => {
-    const precise = /^\d{4}-\d{2}-\d{2}/;
-    const dt = precise.test(d.krovimo_data) ? d.krovimo_data.slice(0,10)
-              : precise.test(d.uzsakymo_data) ? d.uzsakymo_data.slice(0,10) : null;
+    const precise = /^\d{4}-\d{2}-\d{2}$/;
+    const dt = precise.test(d.krovimo_data) ? d.krovimo_data
+              : precise.test(d.uzsakymo_data) ? d.uzsakymo_data : null;
     if (!dt) return;
     (byDate[dt] = byDate[dt] || []).push({ ...d, _calDate: dt, _isOrderDate: !precise.test(d.krovimo_data) });
   });
@@ -1798,8 +1800,8 @@ function renderCalendar(year, month) {
     const isWknd   = dow >= 5;
     const holiday  = inMonth ? getLtHoliday(d) : null;
     const orders   = inMonth ? (byDate[ds] || []).slice().sort((a,b) => {
-      const aT = a.krovimo_data.length > 10 ? a.krovimo_data.slice(11) : null;
-      const bT = b.krovimo_data.length > 10 ? b.krovimo_data.slice(11) : null;
+      const aT = a.laikas || null;
+      const bT = b.laikas || null;
       if (aT && bT) return aT.localeCompare(bT);
       if (aT) return -1;
       if (bT) return 1;
@@ -1824,7 +1826,7 @@ function renderCalendar(year, month) {
         : 'cal-o-none';
       const m3 = calcM3(o);
       const orderDateHint = o._isOrderDate ? ' · (užs. data)' : '';
-      const oTime = o.krovimo_data.length > 10 ? o.krovimo_data.slice(11) : '';
+      const oTime = o.laikas || '';
       return `<span class="cal-order ${oc}" title="${escapeHtml(o.uzsakovas + ' · ' + o.produktas + ' · ' + (o.busena||'—') + orderDateHint)}" onclick="openEditOrder('${escapeHtml(o.seka)}')" style="cursor:pointer">
         <span class="cal-o-prod">${oTime ? `<span style="font-weight:700;color:#555">⏰${oTime} </span>` : ''}${escapeHtml(o.produktas||'—')}${m3 ? `<span class="cal-o-kiekis"> · ${fmtM3(m3)} m³</span>` : ''}</span>
         <div class="cal-o-klientas">${escapeHtml(o.uzsakovas||'')}${o._isOrderDate ? ' <span style="opacity:0.55">(užs.)</span>' : ''}</div>
@@ -1902,17 +1904,17 @@ function printWeek() { window.print(); }
 
 function exportWeekCSV() {
   const mon = new Date(); mon.setDate(mon.getDate() - (mon.getDay() + 6) % 7 + weekOffset * 7);
-  const rows = [['Data','Diena','Produktas','m³','Užsakovas','Būsena','Užsakymo nr','Transportas','Komentaras']];
+  const rows = [['Data','Diena','Laikas','Produktas','m³','Užsakovas','Būsena','Užsakymo nr','Transportas','Auto info','Komentaras']];
   const DOW = ['Pirmadienis','Antradienis','Trečiadienis','Ketvirtadienis','Penktadienis','Šeštadienis','Sekmadienis'];
   for (let i = 0; i < 7; i++) {
     const d = new Date(mon); d.setDate(mon.getDate() + i);
     const ds = toDateStr(d);
     ALL_DATA
-      .filter(o => o.krovimo_data.startsWith(ds))
-      .sort((a, b) => (a.produktas||'').localeCompare(b.produktas||''))
+      .filter(o => o.krovimo_data === ds)
+      .sort((a, b) => (a.laikas||'').localeCompare(b.laikas||'') || (a.produktas||'').localeCompare(b.produktas||''))
       .forEach(o => {
         const m3 = calcM3(o);
-        rows.push([ds, DOW[i], o.produktas||'', m3 != null ? String(m3).replace('.',',') : '', o.uzsakovas||'', o.busena||'', o.uzsakymo_nr||'', o.transportas||'', o.komentaras||'']);
+        rows.push([ds, DOW[i], o.laikas||'', o.produktas||'', m3 != null ? String(m3).replace('.',',') : '', o.uzsakovas||'', o.busena||'', o.uzsakymo_nr||'', o.transportas||'', o.auto_info||'', o.komentaras||'']);
       });
   }
   const d0 = toDateStr(mon); const d1 = toDateStr(new Date(mon.getTime() + 6*86400000));
@@ -1926,31 +1928,33 @@ function exportWeekCSV() {
 function exportCalendarCSV() {
   const MONTH_LT = ['Sausis','Vasaris','Kovas','Balandis','Gegužė','Birželis','Liepa','Rugpjūtis','Rugsėjis','Spalis','Lapkritis','Gruodis'];
   const precise = /^\d{4}-\d{2}-\d{2}$/;
-  const rows = [['Data','Krovimo data','Užsakovas','Produktas','m³','Būsena','Užsakymo nr','Komentaras']];
+  const rows = [['Data','Krovimo data','Laikas','Užsakovas','Produktas','m³','Būsena','Užsakymo nr','Auto info','Komentaras']];
 
   // Surenkam visus užsakymus šio mėnesio dienomis (ta pati logika kaip renderCalendar)
   const prefix = calYear + '-' + String(calMonth + 1).padStart(2, '0');
   ALL_DATA
     .filter(d => {
-      const dt = precise.test(d.krovimo_data) ? d.krovimo_data.slice(0,10)
-               : precise.test(d.uzsakymo_data) ? d.uzsakymo_data.slice(0,10) : null;
+      const dt = precise.test(d.krovimo_data) ? d.krovimo_data
+               : precise.test(d.uzsakymo_data) ? d.uzsakymo_data : null;
       return dt && dt.startsWith(prefix);
     })
     .sort((a, b) => {
-      const dtA = precise.test(a.krovimo_data) ? a.krovimo_data.slice(0,10) : a.uzsakymo_data;
-      const dtB = precise.test(b.krovimo_data) ? b.krovimo_data.slice(0,10) : b.uzsakymo_data;
-      return dtA.localeCompare(dtB) || (a.produktas || '').localeCompare(b.produktas || '');
+      const dtA = precise.test(a.krovimo_data) ? a.krovimo_data : a.uzsakymo_data;
+      const dtB = precise.test(b.krovimo_data) ? b.krovimo_data : b.uzsakymo_data;
+      return dtA.localeCompare(dtB) || (a.laikas||'').localeCompare(b.laikas||'') || (a.produktas || '').localeCompare(b.produktas || '');
     })
     .forEach(d => {
       const m3 = calcM3(d);
       rows.push([
         d.uzsakymo_data || '',
         d.krovimo_data  || '',
+        d.laikas        || '',
         d.uzsakovas     || '',
         d.produktas     || '',
         m3 != null ? String(m3).replace('.', ',') : '',
         d.busena        || '',
         d.uzsakymo_nr   || '',
+        d.auto_info     || '',
         d.komentaras    || '',
       ]);
     });
@@ -1979,7 +1983,7 @@ function renderWeek() {
   document.getElementById('wk-print-title').textContent = 'Savaitės krovinių planas: ' + rangeStr;
 
   const weekFrom = toDateStr(days[0]), weekTo = toDateStr(days[6]);
-  const weekLoads = ALL_DATA.filter(o => o.krovimo_data.slice(0,10) >= weekFrom && o.krovimo_data.slice(0,10) <= weekTo);
+  const weekLoads = ALL_DATA.filter(o => o.krovimo_data >= weekFrom && o.krovimo_data <= weekTo);
   // Bendri produktų stulpeliai visai savaitei (kad dienose sutaptų)
   const products = [...new Set(weekLoads.map(o => o.produktas || '—'))]
     .sort((a, b) => prodRank(a) - prodRank(b) || a.localeCompare(b));
@@ -1989,14 +1993,14 @@ function renderWeek() {
     const ds = toDateStr(d);
     const isToday = ds === todayStr;
     const isWknd = i >= 5;
-    const dayLoads = ALL_DATA.filter(o => o.krovimo_data.startsWith(ds));
+    const dayLoads = ALL_DATA.filter(o => o.krovimo_data === ds);
     let sumM3 = 0; dayLoads.forEach(o => { const v = calcM3(o); if (v) sumM3 += v; });
 
     const colsHtml = products.length ? products.map(p => {
       const orders = dayLoads.filter(o => (o.produktas || '—') === p)
         .sort((a, b) => {
-          const aT = a.krovimo_data.length > 10 ? a.krovimo_data.slice(11) : null;
-          const bT = b.krovimo_data.length > 10 ? b.krovimo_data.slice(11) : null;
+          const aT = a.laikas || null;
+          const bT = b.laikas || null;
           if (aT && bT) return aT.localeCompare(bT);
           if (aT) return -1;
           if (bT) return 1;
@@ -2004,7 +2008,7 @@ function renderWeek() {
         });
       let pM3 = 0; orders.forEach(o => { const v = calcM3(o); if (v) pM3 += v; });
       const ordersHtml = orders.length ? orders.map(o => {
-        const oTime = o.krovimo_data.length > 10 ? o.krovimo_data.slice(11) : '';
+        const oTime = o.laikas || '';
         return `
         <div class="wk-o" onclick="openEditOrder('${o.seka}')" style="cursor:pointer">
           <div class="wk-o-top">
@@ -2012,9 +2016,8 @@ function renderWeek() {
             <span>${escapeHtml(o.produktas || '—')} <span style="font-weight:600;color:#1A7A4A">${calcM3(o) ? fmtM3(calcM3(o)) + ' m³' : ''}</span>${o.uzsakymo_nr ? ' <span class="wk-o-nr">' + escapeHtml(o.uzsakymo_nr) + '</span>' : ''}</span>
           </div>
           <div style="font-size:11px;color:#444;margin-top:1px;font-weight:600">${escapeHtml(o.uzsakovas || '—')}</div>
-          <div class="wk-o-meta">${badge(o.busena)}${o.transportas ? ' · ' + escapeHtml(o.transportas) : ''}</div>
+          <div class="wk-o-meta">${badge(o.busena)}${o.transportas ? ' · ' + escapeHtml(o.transportas) : ''}${o.auto_info ? ' · 🚚 ' + escapeHtml(o.auto_info) : ''}</div>
           ${o.komentaras ? `<div class="wk-o-com">${escapeHtml(o.komentaras)}</div>` : ''}
-          <div class="wk-o-veh" onclick="event.stopPropagation()">🚚 <input class="wk-veh-input" type="text" placeholder="automobilio info…"></div>
         </div>`;
       }).join('') : '<div class="wk-col-empty">—</div>';
       return `<div class="wk-col">
@@ -2402,10 +2405,12 @@ function openNewOrder() {
   document.getElementById('of-produktas').value    = '';
   document.getElementById('of-busena').value       = 'Gauta';
   document.getElementById('of-uzsakymo-data').value = today;
-  document.getElementById('of-krovimo-data').value = '';
-  document.getElementById('of-nr').value           = '';
-  document.getElementById('of-transportas').value  = '';
-  document.getElementById('of-komentaras').value   = '';
+  document.getElementById('of-krovimo-data').value  = '';
+  document.getElementById('of-krovimo-laikas').value = '';
+  document.getElementById('of-auto-info').value     = '';
+  document.getElementById('of-nr').value            = '';
+  document.getElementById('of-transportas').value   = '';
+  document.getElementById('of-komentaras').value    = '';
   const m3El = document.getElementById('of-m3'); m3El.value = ''; m3El.dataset.touched = '';
   document.getElementById('of-secret').value       = localStorage.getItem('po_secret') || '';
   const msg = document.getElementById('om-msg'); msg.textContent = ''; msg.className = 'om-msg';
@@ -2425,9 +2430,9 @@ function openEditOrder(seka) {
   document.getElementById('of-produktas').value    = d.produktas || '';
   document.getElementById('of-busena').value       = ['','Gauta','Priimta','Vykdoma','Išsiųsta','Pristatyta','Atšaukta'].includes(d.busena) ? d.busena : '';
   document.getElementById('of-uzsakymo-data').value = /^\d{4}-\d{2}-\d{2}$/.test(d.uzsakymo_data) ? d.uzsakymo_data : '';
-  const krovParts = (d.krovimo_data || '').split(' ');
-  document.getElementById('of-krovimo-data').value = /^\d{4}-\d{2}-\d{2}/.test(krovParts[0]) ? krovParts[0] : '';
-  document.getElementById('of-krovimo-laikas').value = krovParts[1] || '';
+  document.getElementById('of-krovimo-data').value = /^\d{4}-\d{2}-\d{2}$/.test(d.krovimo_data) ? d.krovimo_data : '';
+  document.getElementById('of-krovimo-laikas').value = d.laikas || '';
+  document.getElementById('of-auto-info').value = d.auto_info || '';
   document.getElementById('of-nr').value           = d.uzsakymo_nr || '';
   document.getElementById('of-transportas').value  = d.transportas || '';
   document.getElementById('of-komentaras').value   = d.komentaras || '';
@@ -2466,7 +2471,9 @@ async function submitNewOrder() {
     produktas:     document.getElementById('of-produktas').value.trim(),
     busena:        document.getElementById('of-busena').value,
     uzsakymo_data: document.getElementById('of-uzsakymo-data').value,
-    krovimo_data:  (document.getElementById('of-krovimo-data').value + (document.getElementById('of-krovimo-laikas').value ? ' ' + document.getElementById('of-krovimo-laikas').value : '')),
+    krovimo_data:  document.getElementById('of-krovimo-data').value,
+    laikas:        document.getElementById('of-krovimo-laikas').value,
+    auto_info:     document.getElementById('of-auto-info').value.trim(),
     uzsakymo_nr:   document.getElementById('of-nr').value.trim(),
     transportas:   document.getElementById('of-transportas').value.trim(),
     m3:            document.getElementById('of-m3').value.trim(),
