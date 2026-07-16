@@ -2009,14 +2009,14 @@ function renderWeek() {
       let pM3 = 0; orders.forEach(o => { const v = calcM3(o); if (v) pM3 += v; });
       const ordersHtml = orders.length ? orders.map(o => {
         const oTime = o.laikas || '';
+        const m3v = calcM3(o);
         return `
         <div class="wk-o" onclick="openEditOrder('${o.seka}')" style="cursor:pointer">
-          <div class="wk-o-top">
-            ${oTime ? `<span class="wk-time-badge">⏰ ${oTime}</span>` : ''}
-            <span>${escapeHtml(o.produktas || '—')} <span style="font-weight:600;color:#1A7A4A">${calcM3(o) ? fmtM3(calcM3(o)) + ' m³' : ''}</span>${o.uzsakymo_nr ? ' <span class="wk-o-nr">' + escapeHtml(o.uzsakymo_nr) + '</span>' : ''}</span>
-          </div>
-          <div style="font-size:11px;color:#444;margin-top:1px;font-weight:600">${escapeHtml(o.uzsakovas || '—')}</div>
-          <div class="wk-o-meta">${badge(o.busena)}${o.transportas ? ' · ' + escapeHtml(o.transportas) : ''}${o.auto_info ? ' · 🚚 ' + escapeHtml(o.auto_info) : ''}</div>
+          ${oTime ? `<div style="font-size:13px;font-weight:800;color:#C0392B;margin-bottom:2px">⏰ ${escapeHtml(oTime)}</div>` : ''}
+          <div style="font-size:12px;font-weight:700;color:#0A2342">${escapeHtml(o.uzsakovas || '—')}${m3v ? `<span style="font-weight:600;color:#1A7A4A;margin-left:4px">${fmtM3(m3v)} m³</span>` : ''}</div>
+          ${o.uzsakymo_nr ? `<div style="font-size:11px;color:#555;margin-top:1px">${escapeHtml(o.uzsakymo_nr)}</div>` : ''}
+          ${o.auto_info ? `<div style="font-size:11px;color:#333;font-weight:600;margin-top:1px">${escapeHtml(o.auto_info)}</div>` : ''}
+          <div class="wk-o-meta" style="margin-top:3px">${badge(o.busena)}${o.transportas ? ' · <span style="font-size:10px">' + escapeHtml(o.transportas) + '</span>' : ''}</div>
           ${o.komentaras ? `<div class="wk-o-com">${escapeHtml(o.komentaras)}</div>` : ''}
         </div>`;
       }).join('') : '<div class="wk-col-empty">—</div>';
