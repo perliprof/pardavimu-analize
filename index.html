@@ -1903,24 +1903,74 @@ function navigateWeek(dir) { weekOffset += dir; renderWeek(); }
 function printWeek() { window.print(); }
 
 function exportWeekCSV() {
+  // Eksportas kaip Sheets savaitės krovinių planas:
+  // kiekvienas produktas = atskira kolona; eilutės = užsakymai per dieną
   const mon = new Date(); mon.setDate(mon.getDate() - (mon.getDay() + 6) % 7 + weekOffset * 7);
-  const rows = [['Data','Diena','Laikas','Produktas','m³','Užsakovas','Būsena','Užsakymo nr','Transportas','Auto info','Komentaras']];
-  const DOW = ['Pirmadienis','Antradienis','Trečiadienis','Ketvirtadienis','Penktadienis','Šeštadienis','Sekmadienis'];
+  const d0 = toDateStr(mon);
+  const d1 = toDateStr(new Date(mon.getTime() + 6 * 86400000));
+  const DOW_FULL2 = ['PIRMADIENIS','ANTRADIENIS','TREČIADIENIS','KETVIRTADIENIS','PENKTADIENIS','ŠEŠTADIENIS','SEKMADIENIS'];
+
+  // Produktų stulpeliai (rūšiuoti kaip savaitės plane)
+  const weekLoads = ALL_DATA.filter(o => o.krovimo_data >= d0 && o.krovimo_data <= d1);
+  const products = [...new Set(weekLoads.map(o => o.produktas || '—'))]
+    .sort((a, b) => prodRank(a) - prodRank(b) || a.localeCompare(b));
+
+  function cell(v) {
+    const s = String(v == null ? '' : v);
+    return /[;\n\r"]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }
+
+  const lines = [];
+  lines.push(['Savaitė ' + d0 + ' – ' + d1, 'Diena', ...products.map(() => ''), 'm³'].map(cell).join(';'));
+
   for (let i = 0; i < 7; i++) {
     const d = new Date(mon); d.setDate(mon.getDate() + i);
     const ds = toDateStr(d);
-    ALL_DATA
-      .filter(o => o.krovimo_data === ds)
-      .sort((a, b) => (a.laikas||'').localeCompare(b.laikas||'') || (a.produktas||'').localeCompare(b.produktas||''))
-      .forEach(o => {
-        const m3 = calcM3(o);
-        rows.push([ds, DOW[i], o.laikas||'', o.produktas||'', m3 != null ? String(m3).replace('.',',') : '', o.uzsakovas||'', o.busena||'', o.uzsakymo_nr||'', o.transportas||'', o.auto_info||'', o.komentaras||'']);
+    const dayOrders = ALL_DATA.filter(o => o.krovimo_data === ds);
+    if (!dayOrders.length) continue;
+
+    const dayM3 = dayOrders.reduce((s, o) => s + (calcM3(o) || 0), 0);
+
+    // Dienos antraštė
+    lines.push([DOW_FULL2[i], ds.slice(8), ...products.map(() => ''), dayM3 ? fmtM3(dayM3) + ' m³' : ''].map(cell).join(';'));
+
+    // Produktų antraštės su m³ suma
+    const prodTotals = products.map(p => {
+      const v = dayOrders.filter(o => (o.produktas || '—') === p).reduce((s, o) => s + (calcM3(o) || 0), 0);
+      return v ? fmtM3(v) + ' m³' : '';
+    });
+    lines.push([...products, ...prodTotals, ''].map(cell).join(';'));
+
+    // Užsakymų eilutės — kiekvienas produktas = kolona, užsakymai stulpelyje
+    const byProd = products.map(p =>
+      dayOrders.filter(o => (o.produktas || '—') === p)
+        .sort((a, b) => (a.laikas || '').localeCompare(b.laikas || '') || (a.uzsakovas || '').localeCompare(b.uzsakovas || ''))
+    );
+    const maxRows = Math.max(0, ...byProd.map(arr => arr.length));
+    for (let r = 0; r < maxRows; r++) {
+      const cols = byProd.map(orders => {
+        const o = orders[r];
+        if (!o) return '';
+        const parts = [];
+        if (o.laikas) parts.push(o.laikas);
+        parts.push(o.uzsakovas || '');
+        if (o.uzsakymo_nr) parts.push(o.uzsakymo_nr);
+        if (o.auto_info) parts.push(o.auto_info);
+        if (o.komentaras) parts.push(o.komentaras);
+        return parts.join('\n');
       });
+      const m3col = byProd.map(orders => {
+        const o = orders[r]; if (!o) return '';
+        const m3 = calcM3(o); return m3 ? fmtM3(m3) + ' m³' : '';
+      }).filter(Boolean).join(' ');
+      lines.push([...cols, m3col].map(cell).join(';'));
+    }
+    lines.push(''); // tuščia eilutė tarp dienų
   }
-  const d0 = toDateStr(mon); const d1 = toDateStr(new Date(mon.getTime() + 6*86400000));
-  const csv = rows.map(r => r.map(v => '"' + String(v).replace(/"/g,'""') + '"').join(';')).join('\r\n');
+
+  const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8;'}));
+  a.href = URL.createObjectURL(blob);
   a.download = 'savaite-' + d0 + '--' + d1 + '.csv';
   a.click();
 }
