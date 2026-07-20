@@ -1031,13 +1031,20 @@ function isPastLoad(r) {
 
 /* ── Volume (m³) calculation ── */
 function calcM3(rec) {
-  const prod  = (rec.produktas  || '').toLowerCase().trim();
-  // BB kiekis gali būti komentare ARBA „Užsakymo nr" lauke (pvz. „3BB"). 1 BB = 1.5 m³.
+  const prod = (rec.produktas || '').toLowerCase().trim();
+
+  // Jei K stulpelyje yra aiški reikšmė — naudojame ją
+  if (rec.m3) {
+    const v = parseFloat(String(rec.m3).replace(',', '.'));
+    if (!isNaN(v) && v > 0) return v;
+  }
+
+  // BB kiekis komentare arba užsakymo nr (tik kai m3 nenurodytas)
   const bbSource = ((rec.komentaras || '') + ' ' + (rec.uzsakymo_nr || '')).toUpperCase();
   const bbMatch = bbSource.match(/(\d+)\s*BB/);
   if (bbMatch) return parseFloat(bbMatch[1]) * 1.5;
 
-  // Fixed-volume products
+  // Fiksuoti tūriai pagal produktą
   if (/^(premium|extra|ekstra|medium)/.test(prod)) return 72;
   if (prod === 'palaidas') return 92;
 
