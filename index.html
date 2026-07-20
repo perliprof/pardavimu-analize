@@ -1771,14 +1771,13 @@ function renderCalendar(year, month) {
   document.getElementById('cal-month-sel').value = month;
   document.getElementById('cal-year-sel').value  = year;
 
-  // Build order index: krovimo_data jei tiksli, kitaip uzsakymo_data (krovimo_data visada grynas data)
+  // Build order index: tik užsakymai su tikslia krovimo_data
   const byDate = {};
+  const precise = /^\d{4}-\d{2}-\d{2}$/;
   ALL_DATA.forEach(d => {
-    const precise = /^\d{4}-\d{2}-\d{2}$/;
-    const dt = precise.test(d.krovimo_data) ? d.krovimo_data
-              : precise.test(d.uzsakymo_data) ? d.uzsakymo_data : null;
+    const dt = precise.test(d.krovimo_data) ? d.krovimo_data : null;
     if (!dt) return;
-    (byDate[dt] = byDate[dt] || []).push({ ...d, _calDate: dt, _isOrderDate: !precise.test(d.krovimo_data) });
+    (byDate[dt] = byDate[dt] || []).push({ ...d, _calDate: dt, _isOrderDate: false });
   });
 
   // First day of month, find preceding Monday
@@ -1985,16 +1984,10 @@ function exportCalendarCSV() {
   // Surenkam visus užsakymus šio mėnesio dienomis (ta pati logika kaip renderCalendar)
   const prefix = calYear + '-' + String(calMonth + 1).padStart(2, '0');
   ALL_DATA
-    .filter(d => {
-      const dt = precise.test(d.krovimo_data) ? d.krovimo_data
-               : precise.test(d.uzsakymo_data) ? d.uzsakymo_data : null;
-      return dt && dt.startsWith(prefix);
-    })
-    .sort((a, b) => {
-      const dtA = precise.test(a.krovimo_data) ? a.krovimo_data : a.uzsakymo_data;
-      const dtB = precise.test(b.krovimo_data) ? b.krovimo_data : b.uzsakymo_data;
-      return dtA.localeCompare(dtB) || (a.laikas||'').localeCompare(b.laikas||'') || (a.produktas || '').localeCompare(b.produktas || '');
-    })
+    .filter(d => precise.test(d.krovimo_data) && d.krovimo_data.startsWith(prefix))
+    .sort((a, b) =>
+      a.krovimo_data.localeCompare(b.krovimo_data) || (a.laikas||'').localeCompare(b.laikas||'') || (a.produktas||'').localeCompare(b.produktas||'')
+    )
     .forEach(d => {
       const m3 = calcM3(d);
       rows.push([
