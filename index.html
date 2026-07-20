@@ -1829,7 +1829,7 @@ function renderCalendar(year, month) {
       const orderDateHint = o._isOrderDate ? ' · (užs. data)' : '';
       const oTime = o.laikas || '';
       return `<span class="cal-order ${oc}" title="${escapeHtml(o.uzsakovas + ' · ' + o.produktas + ' · ' + (o.busena||'—') + orderDateHint)}" onclick="openEditOrder('${escapeHtml(o.seka)}')" style="cursor:pointer">
-        <span class="cal-o-prod">${oTime ? `<span style="font-weight:700;color:#555">⏰${oTime} </span>` : ''}${escapeHtml(o.produktas||'—')}${m3 ? `<span class="cal-o-kiekis"> · ${fmtM3(m3)} m³</span>` : ''}</span>
+        <span class="cal-o-prod">${oTime ? `<span style="font-weight:700;color:#555">${oTime} </span>` : ''}${escapeHtml(o.produktas||'—')}${m3 ? `<span class="cal-o-kiekis"> · ${fmtM3(m3)} m³</span>` : ''}</span>
         <div class="cal-o-klientas">${escapeHtml(o.uzsakovas||'')}${o._isOrderDate ? ' <span style="opacity:0.55">(užs.)</span>' : ''}</div>
       </span>`;
     }).join('');
@@ -2064,7 +2064,7 @@ function renderWeek() {
         const m3v = calcM3(o);
         return `
         <div class="wk-o" onclick="openEditOrder('${o.seka}')" style="cursor:pointer">
-          ${oTime ? `<div style="font-size:13px;font-weight:800;color:#111;margin-bottom:2px">⏰ ${escapeHtml(oTime)}</div>` : ''}
+          ${oTime ? `<div style="font-size:16px;font-weight:800;color:#111;margin-bottom:2px">${escapeHtml(oTime)}</div>` : ''}
           <div style="font-size:12px;font-weight:700;color:#0A2342">${escapeHtml(o.uzsakovas || '—')}${m3v ? `<span style="font-weight:600;color:#1A7A4A;margin-left:4px">${fmtM3(m3v)} m³</span>` : ''}</div>
           ${o.uzsakymo_nr ? `<div style="font-size:11px;color:#555;margin-top:1px">${escapeHtml(o.uzsakymo_nr)}</div>` : ''}
           ${o.auto_info ? `<div style="font-size:11px;color:#333;font-weight:600;margin-top:1px">${escapeHtml(o.auto_info)}</div>` : ''}
