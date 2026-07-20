@@ -1202,7 +1202,8 @@ function renderKPIs(data) {
   const overdue     = data.filter(isVeluoja).length;
   const todayLoad   = data.filter(d => (d.krovimo_data || '').startsWith(today)).length;
   const thisMonthN  = data.filter(d => d.uzsakymo_data.startsWith(thisM)).length;
-  const thisWeekN   = data.filter(d => d.uzsakymo_data >= weekStartStr && d.uzsakymo_data <= today).length;
+  const weekEndStr  = new Date(+weekStart + 6*864e5).toISOString().substring(0, 10);
+  const thisWeekN   = data.filter(d => d.krovimo_data >= weekStartStr && d.krovimo_data <= weekEndStr).length;
 
   let pendingM3 = 0, pendingM3Unknown = 0;
   data.filter(isNeivykdyta).forEach(d => { const v = calcM3(d); v !== null ? pendingM3 += v : pendingM3Unknown++; });
