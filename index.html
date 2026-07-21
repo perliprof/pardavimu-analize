@@ -2837,6 +2837,7 @@ async function loadCRM() {
     const hdr = rows[0];
     const fi = name => hdr.findIndex(h => h.trim() === name.trim());
     const iSalis    = fi('Šalis');
+    const iTrump    = fi('Sutrumpintas pavadinimas');
     const iImone    = fi('Įmonė');
     const iAdresas  = fi('Adresas');
     const iSekt     = fi('Sektorius');
@@ -2850,6 +2851,7 @@ async function loadCRM() {
     const iNutarta  = fi('Kas buvo nutarta');
     CRM_DATA = rows.slice(1).filter(r => r[iImone] && r[iImone].trim()).map(r => ({
       salis:    (r[iSalis]   || '').trim(),
+      trump:    (iTrump >= 0 ? r[iTrump] : '').trim(),
       imone:    r[iImone].trim(),
       adresas:  (r[iAdresas] || '').trim(),
       sektorius:(r[iSekt]    || '').trim(),
@@ -2890,15 +2892,20 @@ function findAllCRM(name) {
   const qw = q.split(' ').filter(w => w.length > 2);
   const seen = new Set(), results = [];
   const add = arr => arr.forEach(c => { if (!seen.has(c.imone)) { seen.add(c.imone); results.push(c); } });
-  // 1. tikslus sutapimas po normalizacijos
+  // 0. tikslus sutapimas su sutrumpintu pavadinimu (aukščiausias prioritetas)
+  add(CRM_DATA.filter(c => c.trump && _normN(c.trump) === q));
+  // 1. tikslus sutapimas po normalizacijos su įmone
   add(CRM_DATA.filter(c => _normN(c.imone) === q));
-  // 2. vienas apima kitą
-  add(CRM_DATA.filter(c => { const cn = _normN(c.imone); return cn.includes(q) || q.includes(cn); }));
-  // 3. žodžių sutapimas ≥ 60% (min 2 žodžiai kai ieškoma frazė ilga)
+  // 2. vienas apima kitą (trump arba imone)
+  add(CRM_DATA.filter(c => {
+    const tn = c.trump ? _normN(c.trump) : '';
+    const cn = _normN(c.imone);
+    return (tn && (tn.includes(q) || q.includes(tn))) || cn.includes(q) || q.includes(cn);
+  }));
+  // 3. žodžių sutapimas ≥ 60%
   if (qw.length >= 2) {
     add(CRM_DATA.filter(c => {
       const cn = _normN(c.imone);
-      const cnw = cn.split(' ').filter(w => w.length > 2);
       const hit = qw.filter(w => cn.includes(w)).length;
       return hit >= Math.max(2, Math.ceil(qw.length * 0.6));
     }));
