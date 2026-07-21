@@ -2857,8 +2857,8 @@ async function loadCRM() {
       nutarta:  (iNutarta >= 0 ? r[iNutarta] : '') || '',
     }));
   } catch(e) { console.warn('CRM load failed', e); }
-  // Jei Klientai overlay atidarytas — perpiešiam šalių grafiką
-  if (document.getElementById('clients-overlay')?.classList.contains('open')) {
+  // Jei Klientai overlay atidarytas ir CRM sėkmingai užkrautas — perpiešiam šalių grafiką
+  if (CRM_DATA.length && document.getElementById('clients-overlay')?.classList.contains('open')) {
     renderSalisChart(_salisMode);
   }
 }
