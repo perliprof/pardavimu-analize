@@ -1633,7 +1633,9 @@ function renderActivity(data) {
       </div>`).join('');
   }
 
+  const _dbg = `[DBG: data=${data.length} custs=${custs.length} ch=${churned.length} dec=${declining.length} act=${active.length}]`;
   document.getElementById('activity-grid').innerHTML = `
+    <div style="font-size:10px;color:#aaa;padding:2px 4px">${_dbg}</div>
     <div class="act-panel churned">
       <div class="act-title">🔴 Nebepirka <span class="count-pill" style="background:rgba(192,57,43,0.1);color:#C0392B">${churned.length}</span></div>
       ${items(churned)}
