@@ -2105,7 +2105,7 @@ function renderWeek() {
 
 /* ── Šalių grafikas ── */
 let _salisMode = 'm3';
-function renderSalisChart(mode) {
+async function renderSalisChart(mode) {
   _salisMode = mode || _salisMode;
 
   // Mygtukų būsena
@@ -2114,12 +2114,8 @@ function renderSalisChart(mode) {
     if (btn) btn.classList.toggle('tab-btn-active', m === _salisMode);
   });
 
-  // Šalių žemėlapis iš ALL_CUSTOMERS (ta pati logika kaip klientų lentelė)
-  if (!CRM_DATA.length) {
-    document.getElementById('salis-table').innerHTML = '<div style="color:#8e8e93;padding:1rem">CRM duomenys dar kraunami — pabandykite po sekundės</div>';
-    setTimeout(() => renderSalisChart(_salisMode), 1200);
-    return;
-  }
+  // Palaukiam kol CRM užsikrauna (promise iš loadCRM)
+  if (_crmReady) await _crmReady;
   const byCountry = {};
   (ALL_CUSTOMERS || []).forEach(r => {
     const crm = findCRM(r.name);
@@ -2776,8 +2772,8 @@ async function tryLoad() {
     document.getElementById('loading').style.display = '';
   }
 
-  // CRM kraunam fone (ne blokuojam)
-  loadCRM();
+  // CRM kraunam fone; _crmReady promise leidžia kitiems laukti
+  _crmReady = loadCRM();
 
   // Fone kraunam šviežius duomenis
   try {
@@ -2818,6 +2814,7 @@ const GAMYBA_URL   = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTRGeNdfu4
 const CLIENTS_URL  = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQQ277gvKWxe3wt8BmchAhuiU-gOwrNLtXacsST0-n7Nds9i5eZ7kkLb5DUTRox4Q/pub?gid=690985131&single=true&output=csv';
 
 let CRM_DATA = [];
+let _crmReady = null; // Promise, išsisprendžia kai CRM užsikrauna
 
 async function loadCRM() {
   try {
