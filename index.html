@@ -2114,36 +2114,18 @@ function renderSalisChart(mode) {
     if (btn) btn.classList.toggle('tab-btn-active', m === _salisMode);
   });
 
-  // Jei CRM neužkrautas — krauti iš naujo ir grįžti
+  // Jei CRM dar neužkrautas — krauti ir grįžti (be rekursijos iš overlay patikros)
   if (!CRM_DATA.length) {
-    loadCRM().then(() => renderSalisChart(_salisMode));
+    const p = loadCRM();
+    if (p && p.then) p.then(() => { if (CRM_DATA.length) renderSalisChart(_salisMode); });
     return;
   }
 
-  // Iteruojam CRM_DATA (kur žinome šalį) → ieškome kliento ALL_CUSTOMERS
+  // Naudojam findCRM — ta pati logika kaip klientų lentelė
   const byCountry = {};
-  const usedCustomers = new Set();
-  (CRM_DATA || []).forEach(crm => {
-    const salis = (crm.salis || '').trim();
-    if (!salis || salis === '—') return;
-    const q = _normN(crm.imone);
-    const custRow = (ALL_CUSTOMERS || []).find(r => {
-      const cn = _normN(r.name);
-      return cn === q || cn.includes(q) || q.includes(cn);
-    });
-    if (!custRow || usedCustomers.has(custRow.name)) return;
-    usedCustomers.add(custRow.name);
-    if (!byCountry[salis]) byCountry[salis] = { m3: 0, cnt: 0, clients: [] };
-    byCountry[salis].m3 += custRow.custM3 || 0;
-    byCountry[salis].cnt += custRow.count || 0;
-    byCountry[salis].clients.push(custRow.name);
-  });
-
-  // Papildymas: klientai kuriems findCRM rado šalį bet CRM iteracija praleido
   (ALL_CUSTOMERS || []).forEach(r => {
-    if (usedCustomers.has(r.name)) return;
     const crm = findCRM(r.name);
-    const salis = (crm && crm.salis) ? crm.salis.trim() : null;
+    const salis = crm ? (crm.salis || '').trim() : '';
     if (!salis || salis === '—') return;
     if (!byCountry[salis]) byCountry[salis] = { m3: 0, cnt: 0, clients: [] };
     byCountry[salis].m3 += r.custM3 || 0;
