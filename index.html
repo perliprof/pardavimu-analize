@@ -2177,6 +2177,17 @@ function renderSalisChart(mode) {
     }
   });
 
+  // DEBUG: rodyti pirmus CRM ir klientų vardus
+  if (!sorted.length) {
+    const crmSample = CRM_DATA.slice(0,5).map(c => escapeHtml(c.imone) + ' [' + escapeHtml(c.salis||'?') + ']').join('<br>');
+    const custSample = (ALL_CUSTOMERS||[]).slice(0,5).map(r => escapeHtml(r.name)).join('<br>');
+    document.getElementById('salis-table').innerHTML = `<div style="font-size:11px;padding:6px;background:#fff3cd;border-radius:6px">
+      <b>CRM (${CRM_DATA.length}):</b><br>${crmSample||'—'}<br><br>
+      <b>Klientai (${(ALL_CUSTOMERS||[]).length}):</b><br>${custSample||'—'}
+    </div>`;
+    return;
+  }
+
   // Lentelė šalia
   const total = values.reduce((s, v) => s + v, 0);
   document.getElementById('salis-table').innerHTML = sorted.length ? `
