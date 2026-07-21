@@ -571,6 +571,20 @@ body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; co
       </div>
     </div>
 
+    <div class="card" style="margin-bottom:1.1rem">
+      <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+        <span>Šalys <span class="card-title-sub">eksportas pagal paskirties šalį</span></span>
+        <div style="display:flex;gap:6px">
+          <button id="salis-btn-m3" onclick="renderSalisChart('m3')" class="tab-btn tab-btn-active" style="font-size:12px;padding:3px 12px">m³</button>
+          <button id="salis-btn-cnt" onclick="renderSalisChart('cnt')" class="tab-btn" style="font-size:12px;padding:3px 12px">Užsakymai</button>
+        </div>
+      </div>
+      <div style="display:flex;gap:1.5rem;flex-wrap:wrap;align-items:flex-start">
+        <div style="flex:1;min-width:280px;min-height:260px;position:relative"><canvas id="salis-chart"></canvas></div>
+        <div id="salis-table" style="flex:0 0 320px;font-size:13px"></div>
+      </div>
+    </div>
+
     <div class="card">
       <div class="card-title">
         Klientų sąrašas
@@ -2089,11 +2103,96 @@ function renderWeek() {
   }).join('');
 }
 
+/* ── Šalių grafikas ── */
+let _salisMode = 'm3';
+function renderSalisChart(mode) {
+  _salisMode = mode || _salisMode;
+
+  // Mygtukų būsena
+  ['m3','cnt'].forEach(m => {
+    const btn = document.getElementById('salis-btn-' + m);
+    if (btn) btn.classList.toggle('tab-btn-active', m === _salisMode);
+  });
+
+  // Sukurti šalies → m³/skaičius žemėlapį iš ALL_DATA
+  const byCountry = {};
+  (ALL_DATA || []).forEach(d => {
+    const crm = findCRM(d.uzsakovas);
+    const salis = (crm && crm.salis) ? crm.salis.trim() : null;
+    if (!salis || salis === '—') return;
+    if (!byCountry[salis]) byCountry[salis] = { m3: 0, cnt: 0, clients: new Set() };
+    const v = calcM3(d);
+    byCountry[salis].m3 += v || 0;
+    byCountry[salis].cnt += 1;
+    if (d.uzsakovas) byCountry[salis].clients.add(d.uzsakovas);
+  });
+
+  const sorted = Object.entries(byCountry)
+    .sort((a, b) => b[1][_salisMode] - a[1][_salisMode]);
+
+  const labels = sorted.map(([k]) => k);
+  const values = sorted.map(([, v]) => _salisMode === 'm3' ? Math.round(v.m3) : v.cnt);
+  const colors = ['#2B6CB0','#1A7A4A','#C47A00','#8B4513','#6A0DAD','#C0392B','#1ABC9C','#2C3E50','#D35400','#7F8C8D'];
+
+  mkChart('salis-chart', {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        data: values,
+        backgroundColor: labels.map((_, i) => colors[i % colors.length]),
+        borderRadius: 5,
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => _salisMode === 'm3' ? ctx.parsed.x.toLocaleString('lt-LT') + ' m³' : ctx.parsed.x + ' užs.' } }
+      },
+      scales: {
+        x: { ticks: { font: { size: 11, family: "'Montserrat'" }, callback: v => _salisMode === 'm3' ? v.toLocaleString('lt-LT') : v }, grid: { color: 'rgba(0,0,0,0.04)' } },
+        y: { ticks: { font: { size: 12, family: "'Montserrat'", weight: '700' } } }
+      }
+    }
+  });
+
+  // Lentelė šalia
+  const total = values.reduce((s, v) => s + v, 0);
+  document.getElementById('salis-table').innerHTML = sorted.length ? `
+    <table style="width:100%;border-collapse:collapse">
+      <thead><tr style="font-size:11px;color:#8e8e93;border-bottom:2px solid #eee">
+        <th style="text-align:left;padding:4px 6px">Šalis</th>
+        <th style="text-align:right;padding:4px 6px">${_salisMode === 'm3' ? 'm³' : 'Užs.'}</th>
+        <th style="text-align:right;padding:4px 6px">%</th>
+        <th style="text-align:left;padding:4px 6px">Klientai</th>
+      </tr></thead>
+      <tbody>${sorted.map(([salis, v], i) => {
+        const val = _salisMode === 'm3' ? Math.round(v.m3) : v.cnt;
+        const pct = total ? Math.round(val / total * 100) : 0;
+        const clr = colors[i % colors.length];
+        return `<tr style="border-bottom:1px solid #f0f0f0;font-size:12px">
+          <td style="padding:5px 6px;font-weight:700"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${clr};margin-right:5px;vertical-align:middle"></span>${escapeHtml(salis)}</td>
+          <td style="text-align:right;padding:5px 6px;font-weight:700">${_salisMode === 'm3' ? val.toLocaleString('lt-LT') : val}</td>
+          <td style="text-align:right;padding:5px 6px;color:#6e6e73">${pct}%</td>
+          <td style="padding:5px 6px;color:#6e6e73;font-size:11px">${escapeHtml([...v.clients].join(', '))}</td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table>` : '<div style="color:#8e8e93;padding:1rem">Nėra šalies duomenų (CRM neužpildyta)</div>';
+
+  // Grafikas aukštis priklauso nuo kiekio
+  const h = Math.max(200, sorted.length * 36);
+  document.querySelector('#salis-chart').parentElement.style.minHeight = h + 'px';
+}
+
 /* ── Klientai overlay ── */
 function openClients() {
   document.getElementById('clients-count').textContent =
     (ALL_CUSTOMERS ? ALL_CUSTOMERS.length : 0) + ' klientų · ' + viewYear + ' m.';
   renderCRMOnly();
+  renderSalisChart('m3');
   document.getElementById('clients-overlay').classList.add('open');
   document.body.style.overflow = 'hidden';
   window.scrollTo(0, 0);
