@@ -2114,17 +2114,21 @@ function renderSalisChart(mode) {
     if (btn) btn.classList.toggle('tab-btn-active', m === _salisMode);
   });
 
-  // Sukurti šalies → m³/skaičius žemėlapį iš ALL_DATA
+  // Šalių žemėlapis iš ALL_CUSTOMERS (ta pati logika kaip klientų lentelė)
+  if (!CRM_DATA.length) {
+    document.getElementById('salis-table').innerHTML = '<div style="color:#8e8e93;padding:1rem">CRM duomenys dar kraunami — pabandykite po sekundės</div>';
+    setTimeout(() => renderSalisChart(_salisMode), 1200);
+    return;
+  }
   const byCountry = {};
-  (ALL_DATA || []).forEach(d => {
-    const crm = findCRM(d.uzsakovas);
+  (ALL_CUSTOMERS || []).forEach(r => {
+    const crm = findCRM(r.name);
     const salis = (crm && crm.salis) ? crm.salis.trim() : null;
     if (!salis || salis === '—') return;
-    if (!byCountry[salis]) byCountry[salis] = { m3: 0, cnt: 0, clients: new Set() };
-    const v = calcM3(d);
-    byCountry[salis].m3 += v || 0;
-    byCountry[salis].cnt += 1;
-    if (d.uzsakovas) byCountry[salis].clients.add(d.uzsakovas);
+    if (!byCountry[salis]) byCountry[salis] = { m3: 0, cnt: 0, clients: [] };
+    byCountry[salis].m3 += r.custM3 || 0;
+    byCountry[salis].cnt += r.count || 0;
+    byCountry[salis].clients.push(r.name);
   });
 
   const sorted = Object.entries(byCountry)
