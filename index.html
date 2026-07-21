@@ -2113,11 +2113,12 @@ function renderSalisChart(mode) {
     const btn = document.getElementById('salis-btn-' + m);
     if (btn) btn.classList.toggle('tab-btn-active', m === _salisMode);
   });
-  // DEBUG: pirmą kartą parodom diagnostiką
-  const _dbg = ALL_CUSTOMERS.slice(0, 8).map(r => {
-    const c = findCRM(r.name); return r.name + ' → ' + (c ? (c.salis||'(tuščia šalis)') : 'null');
-  }).join('\n');
-  console.log('Šalių debug:', _dbg, 'CRM_DATA:', CRM_DATA.length);
+  // DEBUG: rodyti diagnostiką puslapyje
+  const _dbgLines = ALL_CUSTOMERS.slice(0, 10).map(r => {
+    const c = findCRM(r.name);
+    return `<tr><td style="padding:2px 8px">${escapeHtml(r.name)}</td><td style="padding:2px 8px;color:${c?'#1A7A4A':'#C0392B'}">${c ? (c.salis||'(šalis tuščia)') : '❌ nerasta CRM'}</td></tr>`;
+  }).join('');
+  document.getElementById('salis-table').innerHTML = `<div style="font-size:11px;color:#888;margin-bottom:4px">DEBUG: CRM_DATA: ${CRM_DATA.length} įrašų, ALL_CUSTOMERS: ${ALL_CUSTOMERS.length}</div><table style="font-size:12px">${_dbgLines}</table>`;
 
   const byCountry = {};
   (ALL_CUSTOMERS || []).forEach(r => {
