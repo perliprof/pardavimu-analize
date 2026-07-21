@@ -1597,6 +1597,7 @@ function initCustomerTable(data) {
 
 /* ── Customer activity ── */
 function renderActivity(data) {
+  try {
   const now = new Date();
   const d60  = new Date(now); d60.setDate(d60.getDate() - 60);
   const d120 = new Date(now); d120.setDate(d120.getDate() - 120);
@@ -1646,6 +1647,10 @@ function renderActivity(data) {
       ${items(active)}
     </div>
   `;
+  } catch(e) {
+    document.getElementById('activity-grid').innerHTML =
+      `<div style="color:red;padding:8px;font-size:12px">Klaida: ${escapeHtml(e.message)}</div>`;
+  }
 }
 
 /* ── Overdue page ── */
