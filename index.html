@@ -2196,10 +2196,11 @@ function openClients() {
   document.getElementById('clients-count').textContent =
     (ALL_CUSTOMERS ? ALL_CUSTOMERS.length : 0) + ' klientų · ' + viewYear + ' m.';
   renderCRMOnly();
-  renderSalisChart('m3');
   document.getElementById('clients-overlay').classList.add('open');
   document.body.style.overflow = 'hidden';
   window.scrollTo(0, 0);
+  // Canvas matomas tik po overlay atsidarymo
+  setTimeout(() => renderSalisChart('m3'), 80);
 }
 
 function closeClients() {
