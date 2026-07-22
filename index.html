@@ -866,8 +866,9 @@ body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; co
           <div style="height:260px"><canvas id="gam-daily-chart"></canvas></div>
         </div>
         <div id="gam-kpi" class="kpi-row" style="margin-bottom:1.2rem"></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:1rem">
           <div class="card"><div class="card-title">Produktai · m³</div><div id="gam-products"></div></div>
+          <div class="card"><div class="card-title">Žaliavos · kg</div><div id="gam-raw"></div></div>
           <div class="card"><div class="card-title">Pamainos · m³</div><div id="gam-shifts"></div></div>
         </div>
         <div class="card">
@@ -2991,30 +2992,35 @@ async function loadGamyba() {
     const resp = await fetch(GAMYBA_URL + '&t=' + Date.now());
     const text = await resp.text();
     const rows = parseCSV(text).filter(r => r.some(c => c.trim()));
-    const hdrs = rows[0].map(h => h.trim().toLowerCase());
+    const normalizeH = h => h.trim().toLowerCase()
+      .replace(/ž/g,'z').replace(/š/g,'s').replace(/č/g,'c').replace(/ė/g,'e')
+      .replace(/ų/g,'u').replace(/ū/g,'u').replace(/į/g,'i').replace(/ą/g,'a')
+      .replace(/0-1\s+mm/g,'0-1mm');
+    const hdrs = rows[0].map(normalizeH);
     const n = v => parseFloat(String(v||'').replace(',','.')) || 0;
-    const M3  = ['produktas premium m3','produktas extra m3','produktas ekstra m3','produktas medium m3',
-                 'produktas 0-1mm m3','produktas a silos m3','produktas b silos m3','produktas c silos m3'];
-    const PROD_LABELS = {'produktas premium m3':'Premium','produktas extra m3':'Extra',
-                         'produktas ekstra m3':'Ekstra','produktas medium m3':'Medium',
-                         'produktas 0-1mm m3':'0-1mm','produktas a silos m3':'A Silos',
-                         'produktas b silos m3':'B Silos','produktas c silos m3':'C Silos'};
+    const M3_COLS = hdrs.filter(h => /^produktas .+ m3$/.test(h));
+    const RAW_COLS = hdrs.filter(h => /zaliava kg$/.test(h));
     GAMYBA_DATA = rows.slice(1).map(vals => {
       const o = {}; hdrs.forEach((h,i) => { o[h] = (vals[i]||'').trim(); });
       const prods = {};
-      M3.forEach(k => { if (n(o[k]) > 0) prods[PROD_LABELS[k]||k] = n(o[k]); });
+      M3_COLS.forEach(k => {
+        const v = n(o[k]); if (v > 0) prods[k.replace(/^produktas /,'').replace(/ m3$/,'').trim()] = v;
+      });
+      const rawBrk = {};
+      RAW_COLS.forEach(k => { const v = n(o[k]); if (v > 0) rawBrk[k.replace(/ zaliava kg$/,'').trim()] = v; });
       return {
         date:  o.date||'', shift: parseInt(o['pamaina']||o['shift'])||0,
         type:  o['pamaina tip']||o['type']||'',
-        m3:    M3.reduce((s,k) => s+n(o[k]),0),
+        m3:    M3_COLS.reduce((s,k) => s+n(o[k]),0),
         smelis:     n(o['s kg']),
         krituliai:  n(o['krituliai']||o['krit']),
         e_atliekos: n(o['e kg']) + n(o['e bb kg']) + n(o['d kg']),
         waste:      n(o['s kg']) + n(o['krituliai']||o['krit']) + n(o['e kg']) + n(o['e bb kg']) + n(o['d kg']),
         gas:        n(o['dujos m3']||o['gas']),
         kwh:        n(o['elektra kwh']||o['kwh']),
-        raw:        ['0 zaliava kg','1 zaliava kg','2 zaliava kg','9 zaliava kg','x zaliava kg'].reduce((s,k)=>s+n(o[k]),0),
+        raw:        RAW_COLS.reduce((s,k)=>s+n(o[k]),0),
         prods,
+        rawBrk,
       };
     }).filter(d => d.date && d.shift > 0);
 
@@ -3288,6 +3294,25 @@ function renderGamyba() {
       </div>
       <div style="height:8px;background:#e5e5ea;border-radius:4px">
         <div style="height:8px;border-radius:4px;background:#1A7A4A;width:${(v/maxProd*100).toFixed(1)}%"></div>
+      </div>
+    </div>`).join('') : '<div style="color:#8e8e93;font-size:13px">Nėra duomenų</div>';
+
+  // ── Žaliavos ──
+  const rawTotals = {};
+  data.forEach(d => Object.entries(d.rawBrk||{}).forEach(([k,v]) => { rawTotals[k]=(rawTotals[k]||0)+v; }));
+  const rawSorted = Object.entries(rawTotals).sort((a,b)=>b[1]-a[1]);
+  const totalRaw = rawSorted.reduce((s,[,v])=>s+v, 0);
+  const maxRaw = rawSorted[0]?.[1] || 1;
+  document.getElementById('gam-raw').innerHTML = rawSorted.length ? `
+    <div style="font-size:13px;font-weight:700;color:#7A5200;margin-bottom:0.5rem">
+      Iš viso: ${(totalRaw/1000).toLocaleString('lt-LT',{minimumFractionDigits:2,maximumFractionDigits:2})} t
+    </div>` + rawSorted.map(([k,v])=>`
+    <div style="margin-bottom:0.55rem">
+      <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:700;margin-bottom:3px">
+        <span>${escapeHtml(k)}</span><span style="color:#7A5200">${(v/1000).toLocaleString('lt-LT',{minimumFractionDigits:2,maximumFractionDigits:2})} t</span>
+      </div>
+      <div style="height:8px;background:#e5e5ea;border-radius:4px">
+        <div style="height:8px;border-radius:4px;background:#C47A00;width:${(v/maxRaw*100).toFixed(1)}%"></div>
       </div>
     </div>`).join('') : '<div style="color:#8e8e93;font-size:13px">Nėra duomenų</div>';
 
