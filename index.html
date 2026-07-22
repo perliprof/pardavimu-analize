@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta http-equiv="refresh" content="300">
 <title>Pardavimų analizė</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0A2342">
@@ -438,9 +437,11 @@ body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; co
   <div style="display:flex;align-items:center;gap:1.1rem">
     <button class="nav-btn" onclick="openGamyba()">🏭 Gamyba</button>
     <button class="nav-btn" onclick="openClients()">👥 Klientai</button>
+    <button class="nav-btn" id="refresh-btn" onclick="refreshData()" title="Atnaujinti duomenis">🔄</button>
     <div class="header-meta">
       <div id="hdr-date"></div>
       <div id="hdr-total"></div>
+      <div id="hdr-updated" style="font-size:11px;color:#8e8e93;margin-top:2px"></div>
     </div>
   </div>
 </div>
@@ -2796,6 +2797,7 @@ async function tryLoad() {
     document.getElementById('auth-gate').classList.remove('show');
     document.getElementById('loading').style.display = 'none';
     init(data);
+    _markUpdated();
   } catch (e) {
     if (e.authFail) {
       localStorage.removeItem('po_secret');
@@ -2819,6 +2821,29 @@ document.getElementById('auth-token').addEventListener('keydown', e => {
 });
 
 tryLoad();
+
+function _markUpdated() {
+  const el = document.getElementById('hdr-updated');
+  if (el) el.textContent = 'Atnaujinta: ' + new Date().toLocaleTimeString('lt-LT', { hour: '2-digit', minute: '2-digit' });
+}
+
+async function refreshData() {
+  const btn = document.getElementById('refresh-btn');
+  if (btn) { btn.textContent = '⏳'; btn.disabled = true; }
+  try {
+    const data = await loadData();
+    localStorage.setItem('po_cache', JSON.stringify(data));
+    init(data);
+    _markUpdated();
+  } catch (e) {
+    if (e.authFail) { showAuthGate('Neteisingas slaptažodis.'); }
+  } finally {
+    if (btn) { btn.textContent = '🔄'; btn.disabled = false; }
+  }
+}
+
+// Auto-atnaujinimas kas 5 min (be puslapio perkrovimo)
+setInterval(refreshData, 5 * 60 * 1000);
 
 /* ══════════════════════════════════════════════
    GAMYBOS ANALIZĖ — overlay
