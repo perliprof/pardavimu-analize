@@ -1895,9 +1895,10 @@ function renderCalendar(year, month) {
   document.getElementById('cal-year-sel').value  = year;
 
   // Build order index: tik užsakymai su tikslia krovimo_data
+  // Naudojam FULL_DATA (ne ALL_DATA) — krovimo data gali būti kitų metų
   const byDate = {};
   const precise = /^\d{4}-\d{2}-\d{2}$/;
-  ALL_DATA.forEach(d => {
+  FULL_DATA.forEach(d => {
     const dt = precise.test(d.krovimo_data) ? d.krovimo_data : null;
     if (!dt) return;
     (byDate[dt] = byDate[dt] || []).push({ ...d, _calDate: dt, _isOrderDate: false });
@@ -2034,7 +2035,7 @@ function exportWeekCSV() {
   const d1 = toDateStr(new Date(mon.getTime() + 6 * 86400000));
   const DOW_LT2 = ['PIRMADIENIS','ANTRADIENIS','TREČIADIENIS','KETVIRTADIENIS','PENKTADIENIS','ŠEŠTADIENIS','SEKMADIENIS'];
 
-  const weekLoads = ALL_DATA.filter(o => o.krovimo_data >= d0 && o.krovimo_data <= d1);
+  const weekLoads = FULL_DATA.filter(o => o.krovimo_data >= d0 && o.krovimo_data <= d1);
   const products = [...new Set(weekLoads.map(o => o.produktas || '—'))]
     .sort((a, b) => prodRank(a) - prodRank(b) || a.localeCompare(b));
   const nP = products.length;
@@ -2050,7 +2051,7 @@ function exportWeekCSV() {
   for (let i = 0; i < 7; i++) {
     const d = new Date(mon); d.setDate(mon.getDate() + i);
     const ds = toDateStr(d);
-    const dayOrds = ALL_DATA.filter(o => o.krovimo_data === ds);
+    const dayOrds = FULL_DATA.filter(o => o.krovimo_data === ds);
     if (!dayOrds.length) continue;
 
     const dayM3 = dayOrds.reduce((s, o) => s + (calcM3(o) || 0), 0);
@@ -2151,7 +2152,7 @@ function renderWeek() {
   document.getElementById('wk-print-title').textContent = 'Savaitės krovinių planas: ' + rangeStr;
 
   const weekFrom = toDateStr(days[0]), weekTo = toDateStr(days[6]);
-  const weekLoads = ALL_DATA.filter(o => o.krovimo_data >= weekFrom && o.krovimo_data <= weekTo);
+  const weekLoads = FULL_DATA.filter(o => o.krovimo_data >= weekFrom && o.krovimo_data <= weekTo);
   // Bendri produktų stulpeliai visai savaitei (kad dienose sutaptų)
   const products = [...new Set(weekLoads.map(o => o.produktas || '—'))]
     .sort((a, b) => prodRank(a) - prodRank(b) || a.localeCompare(b));
@@ -2161,7 +2162,7 @@ function renderWeek() {
     const ds = toDateStr(d);
     const isToday = ds === todayStr;
     const isWknd = i >= 5;
-    const dayLoads = ALL_DATA.filter(o => o.krovimo_data === ds);
+    const dayLoads = FULL_DATA.filter(o => o.krovimo_data === ds);
     let sumM3 = 0; dayLoads.forEach(o => { const v = calcM3(o); if (v) sumM3 += v; });
 
     const colsHtml = products.length ? products.map(p => {
