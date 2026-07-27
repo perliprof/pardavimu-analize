@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Pardavimų analizė</title>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#0A2342">
+<meta name="theme-color" content="#0A0A0A">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -20,7 +20,7 @@
 body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; color: #1a1a2e; min-height: 100vh; }
 
 .page-header {
-  background: #0A2342;
+  background: #0A0A0A;
   color: white;
   padding: 1.1rem 2rem;
   display: flex;
@@ -54,13 +54,13 @@ body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; co
 .kpi-card.c-amber  { border-color: #D97706; } .kpi-card.c-amber  .kpi-value { color: #D97706; }
 .kpi-card.c-green  { border-color: #1A7A4A; } .kpi-card.c-green  .kpi-value { color: #1A7A4A; }
 .kpi-card.c-red    { border-color: #C0392B; } .kpi-card.c-red    .kpi-value { color: #C0392B; }
-.kpi-card.c-navy   { border-color: #0A2342; } .kpi-card.c-navy   .kpi-value { color: #0A2342; }
+.kpi-card.c-navy   { border-color: #0A0A0A; } .kpi-card.c-navy   .kpi-value { color: #0A0A0A; }
 .kpi-card.c-purple { border-color: #6B46C1; } .kpi-card.c-purple .kpi-value { color: #6B46C1; }
 
 /* Cards */
 .card { background: white; border-radius: 14px; padding: 1.1rem 1.25rem; margin-bottom: 1.1rem; }
 .card-title {
-  font-size: 15.5px; font-weight: 700; color: #0A2342;
+  font-size: 15.5px; font-weight: 700; color: #0A0A0A;
   margin-bottom: 0.9rem; padding-bottom: 0.6rem;
   border-bottom: 1px solid #eee;
   display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
@@ -77,7 +77,7 @@ body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; co
 /* Status badge */
 .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 700; }
 .b-pristatyta { background: #E6F4EC; color: #1A7A4A; }   /* žalia */
-.b-issista    { background: #E3EEF8; color: #1A4F80; }   /* mėlyna */
+.b-issista    { background: #E3EEF8; color: #5C7C28; }   /* mėlyna */
 .b-vykdoma    { background: #FEF3C7; color: #A16207; }   /* geltona */
 .b-priimta    { background: #FCE7F1; color: #B03A6E; }   /* rožinė */
 .b-gauta      { background: #FCE9E7; color: #C0392B; }   /* raudona */
@@ -171,11 +171,11 @@ body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; co
 .act-meta { font-size: 10.5px; color: #8e8e93; }
 
 /* Loading */
-#loading { position: fixed; inset: 0; background: rgba(240,242,245,0.92); display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 700; color: #0A2342; z-index: 999; }
-#auth-gate { position: fixed; inset: 0; background: #0A2342; display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
+#loading { position: fixed; inset: 0; background: rgba(240,242,245,0.92); display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 700; color: #0A0A0A; z-index: 999; }
+#auth-gate { position: fixed; inset: 0; background: #0A0A0A; display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
 #auth-gate.show { display: flex; }
 .auth-box { background: #fff; border-radius: 16px; padding: 28px 26px; width: 100%; max-width: 340px; box-shadow: 0 12px 40px rgba(0,0,0,0.3); text-align: center; }
-.auth-title { font-size: 19px; font-weight: 800; color: #0A2342; }
+.auth-title { font-size: 19px; font-weight: 800; color: #0A0A0A; }
 .auth-sub { font-size: 13px; color: #6e6e73; margin: 6px 0 16px; }
 .auth-box input { width: 100%; font-family: inherit; font-size: 15px; padding: 11px 13px; border: 1px solid #d0d5dd; border-radius: 10px; outline: none; margin-bottom: 10px; }
 .auth-box input:focus { border-color: #2B6CB0; box-shadow: 0 0 0 3px rgba(43,108,176,0.15); }
@@ -189,7 +189,7 @@ body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; co
   background: #2B6CB0; color: white; border: none; border-radius: 8px;
   padding: 5px 13px; cursor: pointer; white-space: nowrap; flex-shrink: 0; margin-top: 5px;
 }
-.clarif-btn:hover { background: #1A4F80; }
+.clarif-btn:hover { background: #5C7C28; }
 .clarif-btn:disabled { background: #c7c7cc; cursor: default; }
 
 /* Custom autocomplete dropdown */
@@ -221,7 +221,7 @@ body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; co
   display: flex; align-items: center; justify-content: space-between;
   padding: 1.1rem 1.4rem; border-bottom: 1px solid #eee;
 }
-.om-title { font-size: 18px; font-weight: 800; color: #0A2342; }
+.om-title { font-size: 18px; font-weight: 800; color: #0A0A0A; }
 .om-x { background: #f2f2f7; border: none; border-radius: 8px; width: 32px; height: 32px; font-size: 15px; cursor: pointer; color: #6e6e73; }
 .om-x:hover { background: #e5e5ea; }
 .om-body { padding: 1.2rem 1.4rem; }
@@ -261,7 +261,7 @@ body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; co
 .cal-cell.is-weekend { background: #f8f9fb; }
 .cal-cell.is-holiday { border-color: #D97706; }
 .cal-cell.is-past   { opacity: 0.55; }
-.cal-day-num { font-size: 19px; font-weight: 800; line-height: 1; color: #0A2342; }
+.cal-day-num { font-size: 19px; font-weight: 800; line-height: 1; color: #0A0A0A; }
 .cal-cell.is-today .cal-day-num { color: #2B6CB0; }
 .cal-day-month { font-size: 10px; color: #8e8e93; font-weight: 600; margin-bottom: 2px; }
 .cal-holiday-label { font-size: 9px; font-weight: 700; color: #D97706; background: #FEF3DA; border-radius: 3px; padding: 1px 5px; margin: 3px 0 4px; display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -303,7 +303,7 @@ body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; co
 @media (max-width: 1000px) { .cust-stat-grid { grid-template-columns: repeat(3, 1fr); } }
 .cust-stat { background: white; border-radius: 12px; padding: 0.8rem 1rem; border-left: 4px solid #2B6CB0; }
 .cust-stat .s-label { font-size: 10.5px; font-weight: 700; color: #6e6e73; text-transform: uppercase; letter-spacing: 0.5px; }
-.cust-stat .s-value { font-size: 24px; font-weight: 800; color: #0A2342; line-height: 1.1; margin-top: 3px; }
+.cust-stat .s-value { font-size: 24px; font-weight: 800; color: #0A0A0A; line-height: 1.1; margin-top: 3px; }
 .cust-stat .s-sub { font-size: 11px; color: #8e8e93; margin-top: 2px; }
 .clickable-name { cursor: pointer; }
 .clickable-name:hover { color: #2B6CB0; text-decoration: underline; }
@@ -313,7 +313,7 @@ body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; co
 @media (max-width: 1100px) { .charts-3 { grid-template-columns: 1fr; } }
 
 /* CRM kortelė */
-.crm-card { border-left: 4px solid #1A4F80 !important; }
+.crm-card { border-left: 4px solid #5C7C28 !important; }
 .crm-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem 1.2rem; margin-top: 0.7rem; }
 @media (max-width: 700px) { .crm-grid { grid-template-columns: 1fr; } }
 .crm-field { }
@@ -324,14 +324,14 @@ body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; co
 .crm-val a:hover { text-decoration: underline; }
 .crm-history { max-height: 160px; overflow-y: auto; background: #f9f9fb; border-radius: 8px; padding: 8px 10px; font-size: 12.5px; }
 .crm-no-match { background: white; border-radius: 12px; padding: 0.8rem 1rem; border-left: 4px solid #e5e5ea; color: #8e8e93; font-size: 13px; margin-bottom: 1.1rem; }
-.crm-badge { display: inline-block; font-size: 10px; font-weight: 700; background: #e8f0fe; color: #1A4F80; border-radius: 5px; padding: 1px 6px; margin-left: 5px; vertical-align: middle; }
+.crm-badge { display: inline-block; font-size: 10px; font-weight: 700; background: #e8f0fe; color: #5C7C28; border-radius: 5px; padding: 1px 6px; margin-left: 5px; vertical-align: middle; }
 .crm-only-row td { color: #6e6e73; }
 
 /* CRM edit modal */
 #crm-modal { display:none; position:fixed; inset:0; z-index:900; background:rgba(0,0,0,0.55); align-items:center; justify-content:center; padding:1rem; }
 #crm-modal.open { display:flex; }
 .crm-modal-box { background:white; border-radius:18px; width:100%; max-width:680px; max-height:90vh; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,0.25); }
-.crm-modal-head { background:#1A4F80; color:white; padding:1rem 1.3rem; display:flex; align-items:center; gap:0.7rem; flex-shrink:0; }
+.crm-modal-head { background:#5C7C28; color:white; padding:1rem 1.3rem; display:flex; align-items:center; gap:0.7rem; flex-shrink:0; }
 .crm-modal-title { font-weight:800; font-size:16px; flex:1; }
 .crm-modal-body { overflow-y:auto; padding:1.2rem 1.3rem; display:flex; flex-direction:column; gap:0.7rem; }
 .crm-modal-grid { display:grid; grid-template-columns:1fr 1fr; gap:0.6rem 1rem; }
@@ -340,7 +340,7 @@ body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; co
 .crm-f.full { grid-column:1/-1; }
 .crm-f label { font-size:10.5px; font-weight:700; color:#6e6e73; text-transform:uppercase; letter-spacing:0.4px; }
 .crm-f input, .crm-f textarea { border:1px solid #d1d1d6; border-radius:8px; padding:7px 10px; font-family:'Montserrat',sans-serif; font-size:13px; outline:none; resize:vertical; }
-.crm-f input:focus, .crm-f textarea:focus { border-color:#1A4F80; box-shadow:0 0 0 2px rgba(26,79,128,0.15); }
+.crm-f input:focus, .crm-f textarea:focus { border-color:#5C7C28; box-shadow:0 0 0 2px rgba(26,79,128,0.15); }
 .crm-f textarea { min-height:70px; }
 .crm-f textarea.tall { min-height:120px; }
 .crm-modal-foot { padding:0.9rem 1.3rem; border-top:1px solid #f2f2f7; display:flex; gap:0.6rem; justify-content:flex-end; flex-shrink:0; }
@@ -350,18 +350,18 @@ body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; co
 #week-overlay { display: none; position: fixed; inset: 0; z-index: 520; background: #f0f2f5; flex-direction: column; overflow-y: auto; }
 #week-overlay.open { display: flex; }
 .week-body { padding: 1.3rem 1.5rem 2rem; max-width: 1500px; width: 100%; margin: 0 auto; }
-#wk-print-title { display: none; font-size: 20px; font-weight: 800; color: #0A2342; margin-bottom: 1rem; }
+#wk-print-title { display: none; font-size: 20px; font-weight: 800; color: #0A0A0A; margin-bottom: 1rem; }
 .wk-day { background: white; border-radius: 12px; margin-bottom: 0.9rem; overflow: hidden; border: 1px solid #e5e5ea; }
 .wk-day.is-today { border-color: #1A7A4A; box-shadow: 0 0 0 1px #1A7A4A; }
 .wk-day.is-weekend .wk-day-head { background: #6e6e73; }
-.wk-day-head { display: flex; justify-content: space-between; align-items: center; padding: 0.55rem 1rem; background: #0A2342; color: white; }
+.wk-day-head { display: flex; justify-content: space-between; align-items: center; padding: 0.55rem 1rem; background: #0A0A0A; color: white; }
 .wk-day-head .wd-name { font-weight: 800; font-size: 20px; }
 .wk-day-head .wd-sum { font-size: 17px; opacity: 0.85; }
 .wk-empty { color: #c7c7cc; font-size: 12.5px; padding: 10px; }
 /* Produktų stulpeliai */
 .wk-day-cols { display: grid; gap: 8px; padding: 0.6rem 0.8rem 0.8rem; }
 .wk-col { border: 1px solid #e5e5ea; border-radius: 8px; overflow: hidden; }
-.wk-col-head { background: #eef4fb; color: #1A4F80; font-weight: 800; font-size: 17px; text-transform: uppercase; letter-spacing: 0.3px; padding: 5px 9px; border-bottom: 1px solid #dbe6f2; }
+.wk-col-head { background: #eef4fb; color: #5C7C28; font-weight: 800; font-size: 17px; text-transform: uppercase; letter-spacing: 0.3px; padding: 5px 9px; border-bottom: 1px solid #dbe6f2; }
 .wk-col-empty { color: #d1d1d6; font-size: 12px; padding: 8px; text-align: center; }
 .wk-o { padding: 6px 9px; border-bottom: 1px dashed #eef0f3; }
 .wk-o:last-child { border-bottom: none; }
@@ -391,7 +391,7 @@ body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; co
   /* Kompaktiška — kad tilptų į vieną lapą */
   #week-overlay { font-size: 8px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .wk-day { break-inside: avoid; border: 1px solid #999; box-shadow: none; border-radius: 5px; margin-bottom: 3px; }
-  .wk-day-head { background: #0A2342 !important; padding: 2px 6px; }
+  .wk-day-head { background: #0A0A0A !important; padding: 2px 6px; }
   .wk-day-head .wd-name { font-size: 10px; }
   .wk-day-head .wd-sum { font-size: 8px; }
   .wk-day.is-weekend .wk-day-head { background: #6e6e73 !important; }
@@ -456,7 +456,7 @@ body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; co
 
   <div id="clarif-card" style="display:none;background:white;border-radius:14px;border-left:4px solid #D97706;padding:0.9rem 1.25rem;margin-bottom:1.1rem">
     <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.65rem">
-      <span style="font-size:13px;font-weight:800;color:#0A2342">⚠️ Reikalingas tikslinimas</span>
+      <span style="font-size:13px;font-weight:800;color:#0A0A0A">⚠️ Reikalingas tikslinimas</span>
       <span id="clarif-count" style="font-size:11px;font-weight:600;color:#D97706;background:#FEF3DA;padding:2px 9px;border-radius:10px"></span>
       <span style="font-size:11px;color:#8e8e93;margin-left:auto">Patikslinkite komentarą Google Sheets → spauskite Patvirtinti</span>
     </div>
@@ -551,7 +551,7 @@ body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; co
       </table>
       <div id="load-more-wrap" style="display:none;text-align:center;padding:1rem 0">
         <button id="load-more-btn" onclick="loadMoreOrders()"
-          style="background:#0A2342;color:#fff;border:none;border-radius:8px;padding:10px 28px;font-family:'Montserrat',sans-serif;font-size:14px;font-weight:700;cursor:pointer">
+          style="background:#0A0A0A;color:#fff;border:none;border-radius:8px;padding:10px 28px;font-family:'Montserrat',sans-serif;font-size:14px;font-weight:700;cursor:pointer">
           Rodyti daugiau
         </button>
         <span id="load-more-info" style="margin-left:1rem;font-size:12px;color:#8e8e93"></span>
@@ -565,7 +565,7 @@ body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; co
 
 <!-- Klientai overlay -->
 <div id="clients-overlay">
-  <div class="ov-header" style="background:#0A2342">
+  <div class="ov-header" style="background:#0A0A0A">
     <button class="ov-back" onclick="closeClients()">← Atgal</button>
     <span class="ov-title">👥 Klientai</span>
     <span class="ov-count" id="clients-count"></span>
@@ -642,7 +642,7 @@ body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; co
 
 <!-- Kliento kortelė -->
 <div id="customer-overlay">
-  <div class="ov-header" style="background:#1A4F80">
+  <div class="ov-header" style="background:#5C7C28">
     <button class="ov-back" onclick="closeCustomer()">← Atgal</button>
     <span class="ov-title" id="customer-title">Klientas</span>
     <span class="ov-count" id="customer-sub"></span>
@@ -854,7 +854,7 @@ body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; co
         <button class="cal-nav-btn" onclick="gamybaNav(1)">›</button>
       </div>
       <div id="gam-sel-1" style="display:none;align-items:center">
-        <select class="cal-sel" id="gam-ann-year" onchange="renderGamybaAnnual()" style="color:#0A2342;background:#f2f2f7;border-color:#e5e5ea"></select>
+        <select class="cal-sel" id="gam-ann-year" onchange="renderGamybaAnnual()" style="color:#0A0A0A;background:#f2f2f7;border-color:#e5e5ea"></select>
       </div>
       <div id="gam-sel-2" style="display:none;align-items:center">
         <select class="cal-sel" id="gam-cross-month" onchange="renderGamybaCrossYear()">
@@ -1332,7 +1332,7 @@ function renderWarning(data) {
   if (!ly.length) {
     el.style.borderLeftColor = '#8e8e93';
     el.style.display = '';
-    el.innerHTML = `<span style="font-size:13px;font-weight:700;color:#0A2342">📅 ${monName} ${viewYear}: ${curr.length} užs. · ${currM3.toFixed(0)} m³</span>
+    el.innerHTML = `<span style="font-size:13px;font-weight:700;color:#0A0A0A">📅 ${monName} ${viewYear}: ${curr.length} užs. · ${currM3.toFixed(0)} m³</span>
       <span style="font-size:12px;color:#8e8e93;margin-left:0.75rem">${lyYear} m. duomenų ${monName} nėra</span>`;
     return;
   }
@@ -1341,7 +1341,7 @@ function renderWarning(data) {
   const isBad  = pct !== null && pct < -15;
   const isWarn = pct !== null && pct >= -15 && pct < -5;
   const isGood = pct !== null && pct >= 0;
-  const color  = isBad ? '#C0392B' : isWarn ? '#D97706' : isGood ? '#1A7A4A' : '#0A2342';
+  const color  = isBad ? '#C0392B' : isWarn ? '#D97706' : isGood ? '#1A7A4A' : '#0A0A0A';
   const icon   = isBad ? '🔴' : isWarn ? '🟡' : '🟢';
   const arrow  = pct === null ? '' : pct >= 0 ? '↑' : '↓';
 
@@ -1349,8 +1349,8 @@ function renderWarning(data) {
   el.style.display = '';
   el.innerHTML = `<div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
     <span style="font-size:15px">${icon}</span>
-    <span style="font-size:13px;font-weight:800;color:#0A2342">${monName} palyginimas · ${viewYear} vs ${lyYear}</span>
-    <span style="font-size:13px;color:#0A2342">${viewYear}: <b>${currM3.toFixed(0)} m³</b> (${curr.length} užs.)</span>
+    <span style="font-size:13px;font-weight:800;color:#0A0A0A">${monName} palyginimas · ${viewYear} vs ${lyYear}</span>
+    <span style="font-size:13px;color:#0A0A0A">${viewYear}: <b>${currM3.toFixed(0)} m³</b> (${curr.length} užs.)</span>
     <span style="font-size:13px;color:#8e8e93">vs ${lyYear}: ${lyM3.toFixed(0)} m³ (${ly.length} užs.)</span>
     ${pct !== null ? `<span style="font-size:14px;font-weight:800;color:${color}">${arrow} ${Math.abs(pct).toFixed(1)}%</span>` : ''}
   </div>`;
@@ -1418,7 +1418,7 @@ function renderCustomers(data) {
       const medal = ['🥇','🥈','🥉'][i] || '';
       const m3 = m3tot[name] || 0;
       return `<tr style="cursor:pointer" onclick="openCustomer('${jsAttr(name)}')">
-        <td style="font-weight:800;color:#0A2342;width:26px">${medal || (i+1)}</td>
+        <td style="font-weight:800;color:#0A0A0A;width:26px">${medal || (i+1)}</td>
         <td class="clickable-name" style="font-weight:600;max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(name)}</td>
         <td style="width:90px"><div class="rank-bar-bg"><div class="rank-bar-fill" style="width:${Math.round(cnt/max*100)}%"></div></div></td>
         <td style="text-align:right;padding-right:6px;white-space:nowrap">
@@ -1544,7 +1544,7 @@ function renderTable(data) {
       <td style="white-space:nowrap;font-size:12px">${escapeHtml(d.uzsakymo_data||'—')}</td>
       <td style="white-space:nowrap;font-size:12px">${escapeHtml(d.krovimo_data||'—')}</td>
       <td><strong>${escapeHtml(d.produktas||'—')}</strong></td>
-      <td style="text-align:right;font-weight:700;font-size:12px;color:#0A2342;white-space:nowrap">${fmtM3(vol)}</td>
+      <td style="text-align:right;font-weight:700;font-size:12px;color:#0A0A0A;white-space:nowrap">${fmtM3(vol)}</td>
       <td style="font-weight:600;white-space:nowrap">${escapeHtml(d.uzsakovas||'—')}</td>
       <td style="font-size:11px;color:#8e8e93">${escapeHtml(d.uzsakymo_nr||'—')}</td>
       <td>${badge(d.busena)}</td>
@@ -1781,7 +1781,7 @@ function openOverduePage() {
       <td style="white-space:nowrap;font-size:12px${pastLoad ? ';font-weight:700;color:#C0392B' : ''}">${escapeHtml(d.krovimo_data || '—')}</td>
       <td>${w !== null ? `<span class="days-badge ${wCls}">${w}d.</span>` : '—'}</td>
       <td><strong>${escapeHtml(d.produktas || '—')}</strong></td>
-      <td style="text-align:right;font-weight:700;font-size:12px;color:#0A2342;white-space:nowrap">${fmtM3(vol)}</td>
+      <td style="text-align:right;font-weight:700;font-size:12px;color:#0A0A0A;white-space:nowrap">${fmtM3(vol)}</td>
       <td style="font-weight:600;white-space:nowrap">${escapeHtml(d.uzsakovas || '—')}</td>
       <td style="font-size:11px;color:#8e8e93">${escapeHtml(d.uzsakymo_nr || '—')}</td>
       <td>${badge(d.busena)}</td>
@@ -1842,7 +1842,7 @@ function openPendingPage() {
       <td style="white-space:nowrap;font-size:12px">${krovHtml}</td>
       <td>${wHtml}</td>
       <td><strong>${escapeHtml(d.produktas || '—')}</strong></td>
-      <td style="text-align:right;font-weight:700;font-size:12px;color:#0A2342;white-space:nowrap">${fmtM3(vol)}</td>
+      <td style="text-align:right;font-weight:700;font-size:12px;color:#0A0A0A;white-space:nowrap">${fmtM3(vol)}</td>
       <td style="font-weight:600;white-space:nowrap">${escapeHtml(d.uzsakovas || '—')}</td>
       <td style="font-size:11px;color:#8e8e93">${escapeHtml(d.uzsakymo_nr || '—')}</td>
       <td>${badge(d.busena)}</td>
@@ -2192,7 +2192,7 @@ function renderWeek() {
         return `
         <div class="wk-o" onclick="openEditOrder('${o.seka}')" style="cursor:pointer">
           ${oTime ? `<div style="font-size:20px;font-weight:800;color:#111;margin-bottom:2px">${escapeHtml(oTime)}</div>` : ''}
-          <div style="font-size:20px;font-weight:700;color:#0A2342">${escapeHtml(o.uzsakovas || '—')}${m3v ? `<span style="font-weight:600;color:#1A7A4A;margin-left:4px">${fmtM3(m3v)} m³</span>` : ''}</div>
+          <div style="font-size:20px;font-weight:700;color:#0A0A0A">${escapeHtml(o.uzsakovas || '—')}${m3v ? `<span style="font-weight:600;color:#1A7A4A;margin-left:4px">${fmtM3(m3v)} m³</span>` : ''}</div>
           ${o.uzsakymo_nr ? `<div style="font-size:20px;color:#111;margin-top:1px">${escapeHtml(o.uzsakymo_nr)}</div>` : ''}
           ${o.auto_info ? `<div style="font-size:20px;color:#111;font-weight:600;margin-top:1px">${escapeHtml(o.auto_info)}</div>` : ''}
           <div class="wk-o-meta" style="margin-top:3px">${badge(o.busena)}${o.transportas ? ' · <span style="font-size:20px">' + escapeHtml(o.transportas) + '</span>' : ''}</div>
@@ -2388,7 +2388,7 @@ function openCustomer(name) {
       const renderOne = crm => `<div class="card crm-card" style="margin-bottom:0.8rem">
         <div class="card-title">📋 ${escapeHtml(crm.imone)}
           <span class="card-title-sub">${escapeHtml(crm.salis)}${crm.sektorius ? ' · ' + escapeHtml(crm.sektorius) : ''}</span>
-          <button class="mtoggle" style="margin-left:auto;background:#1A4F80;color:#fff" onclick="openCRMEdit(CRM_DATA.find(c=>c.imone===${JSON.stringify(crm.imone)}))">✏️ Redaguoti</button>
+          <button class="mtoggle" style="margin-left:auto;background:#5C7C28;color:#fff" onclick="openCRMEdit(CRM_DATA.find(c=>c.imone===${JSON.stringify(crm.imone)}))">✏️ Redaguoti</button>
         </div>
         <div class="crm-grid">
           ${row('📍 Adresas', escapeHtml(crm.adresas))}
@@ -2568,7 +2568,7 @@ function renderClarification(data) {
       <span style="color:#2B6CB0;font-weight:600;white-space:nowrap">${escapeHtml(d.produktas || '—')}</span>
       <span style="color:#6e6e73;white-space:nowrap">krovimas: <strong>${escapeHtml(d.krovimo_data || '—')}</strong></span>
       <span style="color:#8e8e93;font-style:italic;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escapeHtml(d.komentaras || '')}">${d.komentaras ? '"' + escapeHtml(d.komentaras) + '"' : '— komentaro nėra —'}</span>
-      <button class="clarif-btn" onclick="openEditOrder('${d.seka}')" style="margin-left:auto;background:#1A4F80">✏️ Redaguoti</button>
+      <button class="clarif-btn" onclick="openEditOrder('${d.seka}')" style="margin-left:auto;background:#5C7C28">✏️ Redaguoti</button>
       <button class="clarif-btn" id="cb-${d.seka}" onclick="confirmOrder('${d.seka}', this)">Patvirtinti</button>
     </div>`).join('');
 }
@@ -2926,7 +2926,7 @@ async function tryLoad() {
       showAuthGate('Neteisingas slaptažodis.');
     } else if (!cached) {
       document.getElementById('loading').innerHTML = 'Klaida: ' + e.message +
-        '<br><br><button onclick="tryLoad()" style="font-family:inherit;font-size:15px;padding:10px 24px;border:none;border-radius:10px;background:#1A4F80;color:#fff;cursor:pointer">↻ Bandyti dar kartą</button>';
+        '<br><br><button onclick="tryLoad()" style="font-family:inherit;font-size:15px;padding:10px 24px;border:none;border-radius:10px;background:#5C7C28;color:#fff;cursor:pointer">↻ Bandyti dar kartą</button>';
     }
     // Jei yra kešas ir tik tinklo klaida — paliekam senus duomenis, nerodoam klaidos
   }
@@ -3251,8 +3251,8 @@ function renderGamybaAnnual() {
   const totRawAnn   = annData.reduce((s,d)=>s+d.raw,0);
   const fmt = v => v > 0 ? v.toLocaleString('lt-LT') : '—';
   const summItems = [
-    { label:'Iš viso m³',           val: totM3ann>0  ? totM3ann.toFixed(1)+' m³'  : '—', color:'#0A2342' },
-    { label:'Darbo dienos',          val: totDays || '—',                                  color:'#1A4F80' },
+    { label:'Iš viso m³',           val: totM3ann>0  ? totM3ann.toFixed(1)+' m³'  : '—', color:'#0A0A0A' },
+    { label:'Darbo dienos',          val: totDays || '—',                                  color:'#5C7C28' },
     { label:'Krituliai + smėlis',    val: totKritSm>0 ? fmt(Math.round(totKritSm))+' kg' : '—', color:'#C0392B' },
     { label:'Atliekos E+D kg',       val: totEAtl>0   ? fmt(Math.round(totEAtl))+' kg'   : '—', color:'#E07055' },
     { label:'Sunaudota žaliava',     val: totRawAnn>0 ? fmt(Math.round(totRawAnn))+' kg' : '—', color:'#7A5200' },
@@ -3317,9 +3317,9 @@ function renderGamybaCrossYear() {
     const m3  = yd.reduce((s,d)=>s+d.m3,0);
     const days = [...new Set(yd.map(d=>d.date))].length;
     const gas  = yd.reduce((s,d)=>s+d.gas,0);
-    return `<div class="kpi-card" style="border-top:3px solid #0A2342">
+    return `<div class="kpi-card" style="border-top:3px solid #0A0A0A">
       <div class="kpi-label">${yr}</div>
-      <div class="kpi-value" style="color:#0A2342">${m3>0?m3.toFixed(1)+' m³':'—'}</div>
+      <div class="kpi-value" style="color:#0A0A0A">${m3>0?m3.toFixed(1)+' m³':'—'}</div>
       <div style="font-size:11px;color:#6e6e73;margin-top:2px">${days} d. · ${gas>0?gas.toLocaleString('lt-LT')+' m³ duj.':'—'}</div>
     </div>`;
   }).join('') : '<div style="color:#8e8e93;font-size:13px;padding:0.5rem">Nėra duomenų šiam mėnesiui</div>';
@@ -3402,8 +3402,8 @@ function renderGamyba() {
   const totGas   = data.reduce((s,d) => s+d.gas, 0);
   const days     = [...new Set(data.map(d=>d.date))].length;
   document.getElementById('gam-kpi').innerHTML = [
-    {label:'Iš viso m³', val: totM3.toFixed(1)+' m³', color:'#0A2342'},
-    {label:'Darbo dienų', val: days, color:'#1A4F80'},
+    {label:'Iš viso m³', val: totM3.toFixed(1)+' m³', color:'#0A0A0A'},
+    {label:'Darbo dienų', val: days, color:'#5C7C28'},
     {label:'Krituliai', val: data.reduce((s,d)=>s+d.krituliai,0)>0 ? data.reduce((s,d)=>s+d.krituliai,0).toFixed(0)+' kg' : '—', color:'#C0392B'},
     {label:'Smėlis', val: data.reduce((s,d)=>s+d.smelis,0)>0 ? data.reduce((s,d)=>s+d.smelis,0).toFixed(0)+' kg' : '—', color:'#8e5c00'},
     {label:'Dujos', val: totGas>0 ? totGas.toLocaleString('lt-LT')+' m³' : '—', color:'#7A5200'},
