@@ -2933,6 +2933,19 @@ document.getElementById('auth-token').addEventListener('keydown', e => {
   if (e.key === 'Enter') document.getElementById('auth-submit').click();
 });
 
+// Jei hub'as perdavė tokenus per URL hash (#hub=key=val&key2=val2) — išsaugom ir valome hash
+(function() {
+  const m = location.hash.match(/^#hub=(.+)/);
+  if (!m) return;
+  try {
+    decodeURIComponent(m[1]).split('&').forEach(pair => {
+      const i = pair.indexOf('=');
+      if (i > 0) localStorage.setItem(pair.slice(0, i), pair.slice(i + 1));
+    });
+  } catch(_) {}
+  history.replaceState(null, '', location.pathname + location.search);
+})();
+
 tryLoad();
 
 function _markUpdated() {
