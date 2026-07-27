@@ -1108,7 +1108,7 @@ function badge(s) {
 async function loadData() {
   const token = localStorage.getItem('po_secret') || '';
   const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 30000);
+  const timer = setTimeout(() => ctrl.abort(), 15000);
   let resp;
   try {
     resp = await fetch(WRITE_ENDPOINT, {
@@ -2903,7 +2903,7 @@ async function tryLoad() {
       _sec++;
       const el = document.getElementById('loading');
       if (el && el.style.display !== 'none') el.textContent = 'Kraunama duomenys… ' + _sec + 's';
-      if (_sec >= 35) clearInterval(_tick);
+      if (_sec >= 20) clearInterval(_tick);
     }, 1000);
     window._loadTick = _tick;
   }
@@ -2920,6 +2920,7 @@ async function tryLoad() {
     init(data);
     _markUpdated();
   } catch (e) {
+    if (window._loadTick) { clearInterval(window._loadTick); window._loadTick = null; }
     if (e.authFail) {
       localStorage.removeItem('po_secret');
       localStorage.removeItem('po_cache');
