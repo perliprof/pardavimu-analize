@@ -2897,6 +2897,15 @@ async function tryLoad() {
     } catch (_) {}
   } else {
     document.getElementById('loading').style.display = '';
+    // Diagnostinis laikmatis — rodo sekundes, patvirtina kad JS veikia
+    let _sec = 0;
+    const _tick = setInterval(() => {
+      _sec++;
+      const el = document.getElementById('loading');
+      if (el && el.style.display !== 'none') el.textContent = 'Kraunama duomenys… ' + _sec + 's';
+      if (_sec >= 35) clearInterval(_tick);
+    }, 1000);
+    window._loadTick = _tick;
   }
 
   // CRM kraunam fone; _crmReady promise leidžia kitiems laukti
