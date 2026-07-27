@@ -27,9 +27,18 @@ body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; co
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+  gap: 0.75rem;
 }
 .header-title h1 { font-size: 22px; font-weight: 800; }
 .header-title p  { font-size: 12px; opacity: 0.6; margin-top: 2px; }
+@media (max-width: 600px) {
+  .page-header { padding: 0.8rem 1rem; }
+  .page-header > div:first-child img { height: 40px !important; }
+  .header-title h1 { font-size: 17px; }
+  .header-title p { display: none; }
+  .header-meta { display: none; }
+}
 .year-chip {
   cursor: pointer; background: rgba(255,255,255,0.15); border-radius: 8px;
   padding: 1px 10px; transition: background 0.12s; white-space: nowrap;
