@@ -1107,11 +1107,21 @@ function badge(s) {
 // paleidžia slaptažodžio užtvarą (žr. tryLoad).
 async function loadData() {
   const token = localStorage.getItem('po_secret') || '';
-  const resp = await fetch(WRITE_ENDPOINT, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({ mode: 'read', token }),
-  });
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 30000);
+  let resp;
+  try {
+    resp = await fetch(WRITE_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ mode: 'read', token }),
+      signal: ctrl.signal,
+    });
+  } catch (err) {
+    clearTimeout(timer);
+    throw new Error(err.name === 'AbortError' ? 'Serveris neatsakė (timeout 30s) — bandykite dar kartą' : 'Ryšio klaida: ' + err.message);
+  }
+  clearTimeout(timer);
   if (!resp.ok) throw new Error('HTTP ' + resp.status);
   let out;
   try { out = await resp.json(); }
@@ -2906,7 +2916,8 @@ async function tryLoad() {
       localStorage.removeItem('po_cache');
       showAuthGate('Neteisingas slaptažodis.');
     } else if (!cached) {
-      document.getElementById('loading').textContent = 'Klaida: ' + e.message;
+      document.getElementById('loading').innerHTML = 'Klaida: ' + e.message +
+        '<br><br><button onclick="tryLoad()" style="font-family:inherit;font-size:15px;padding:10px 24px;border:none;border-radius:10px;background:#1A4F80;color:#fff;cursor:pointer">↻ Bandyti dar kartą</button>';
     }
     // Jei yra kešas ir tik tinklo klaida — paliekam senus duomenis, nerodoam klaidos
   }
