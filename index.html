@@ -1547,7 +1547,7 @@ function renderTable(data) {
       waitHtml = `<span class="days-badge ${cls}">${w}d.</span>`;
     }
     const vol = calcM3(d);
-    const clickable = WRITE_ENDPOINT ? ` onclick="openEditOrder('${d.seka}')" style="cursor:pointer"` : '';
+    const clickable = WRITE_ENDPOINT ? ` onclick="openEditOrder('${d.seka}','${d.uid||""}')" style="cursor:pointer"` : '';
     return `<tr${od?' class="overdue"':''}${clickable}>
       <td style="color:#8e8e93;font-size:11px">${escapeHtml(d.seka)}</td>
       <td style="white-space:nowrap;font-size:12px">${escapeHtml(d.uzsakymo_data||'—')}</td>
@@ -1783,7 +1783,7 @@ function openOverduePage() {
     const pastLoad = isPastLoad(d);
     const w = d.daysWaiting;
     const wCls = w === null ? '' : w <= 5 ? 'db-ok' : w <= 14 ? 'db-warn' : 'db-alert';
-    const clickable = WRITE_ENDPOINT ? ` onclick="openEditOrder('${d.seka}')" style="cursor:pointer"` : '';
+    const clickable = WRITE_ENDPOINT ? ` onclick="openEditOrder('${d.seka}','${d.uid||""}')" style="cursor:pointer"` : '';
     return `<tr${pastLoad ? ' class="overdue"' : ''}${clickable}>
       <td style="color:#8e8e93;font-size:11px">${escapeHtml(d.seka)}</td>
       <td style="white-space:nowrap;font-size:12px">${escapeHtml(d.uzsakymo_data || '—')}</td>
@@ -1844,7 +1844,7 @@ function openPendingPage() {
       ? `<span style="font-weight:700;color:#C0392B">${escapeHtml(d.krovimo_data)}</span> <span class="days-badge db-alert">+${lateDays}d.</span>`
       : escapeHtml(d.krovimo_data || '—');
     const vol = calcM3(d);
-    const clickable = WRITE_ENDPOINT ? ` onclick="openEditOrder('${d.seka}')" style="cursor:pointer"` : '';
+    const clickable = WRITE_ENDPOINT ? ` onclick="openEditOrder('${d.seka}','${d.uid||""}')" style="cursor:pointer"` : '';
     return `<tr${od ? ' class="overdue"' : ''}${clickable}>
       <td style="color:#8e8e93;font-size:11px">${escapeHtml(d.seka)}</td>
       <td style="white-space:nowrap;font-size:12px">${escapeHtml(d.uzsakymo_data || '—')}</td>
@@ -1970,7 +1970,7 @@ function renderCalendar(year, month) {
       const m3 = calcM3(o);
       const orderDateHint = o._isOrderDate ? ' · (užs. data)' : '';
       const oTime = o.laikas || '';
-      return `<span class="cal-order ${oc}" title="${escapeHtml(o.uzsakovas + ' · ' + o.produktas + ' · ' + (o.busena||'—') + orderDateHint)}" onclick="openEditOrder('${escapeHtml(o.seka)}')" style="cursor:pointer">
+      return `<span class="cal-order ${oc}" title="${escapeHtml(o.uzsakovas + ' · ' + o.produktas + ' · ' + (o.busena||'—') + orderDateHint)}" onclick="openEditOrder('${escapeHtml(o.seka)}','${escapeHtml(o.uid||"")}')" style="cursor:pointer">
         <span class="cal-o-prod">${oTime ? `<span style="font-weight:700;color:#555">${oTime} </span>` : ''}${escapeHtml(o.produktas||'—')}${m3 ? `<span class="cal-o-kiekis"> · ${fmtM3(m3)} m³</span>` : ''}</span>
         <div class="cal-o-klientas">${escapeHtml(o.uzsakovas||'')}${o._isOrderDate ? ' <span style="opacity:0.55">(užs.)</span>' : ''}</div>
       </span>`;
@@ -2199,7 +2199,7 @@ function renderWeek() {
         const oTime = o.laikas || '';
         const m3v = calcM3(o);
         return `
-        <div class="wk-o" onclick="openEditOrder('${o.seka}')" style="cursor:pointer">
+        <div class="wk-o" onclick="openEditOrder('${o.seka}','${o.uid||""}')" style="cursor:pointer">
           ${oTime ? `<div style="font-size:20px;font-weight:800;color:#111;margin-bottom:2px">${escapeHtml(oTime)}</div>` : ''}
           <div style="font-size:20px;font-weight:700;color:#0A0A0A">${escapeHtml(o.uzsakovas || '—')}${m3v ? `<span style="font-weight:600;color:#1A7A4A;margin-left:4px">${fmtM3(m3v)} m³</span>` : ''}</div>
           ${o.uzsakymo_nr ? `<div style="font-size:20px;color:#111;margin-top:1px">${escapeHtml(o.uzsakymo_nr)}</div>` : ''}
@@ -2370,7 +2370,7 @@ function openCustomer(name) {
   document.getElementById('customer-orders-count').textContent = orders.length + ' užsakymų · ' + viewYear + ' m.';
   document.getElementById('customer-orders-tbody').innerHTML = orders.map(d => {
     const od = isPastLoad(d);
-    const clickable = WRITE_ENDPOINT ? ` onclick="openEditOrder('${d.seka}')" style="cursor:pointer"` : '';
+    const clickable = WRITE_ENDPOINT ? ` onclick="openEditOrder('${d.seka}','${d.uid||""}')" style="cursor:pointer"` : '';
     return `<tr${od ? ' class="overdue"' : ''}${clickable}>
       <td style="color:#8e8e93;font-size:11px">${escapeHtml(d.seka)}</td>
       <td style="white-space:nowrap;font-size:12px">${escapeHtml(d.uzsakymo_data || '—')}</td>
@@ -2577,7 +2577,7 @@ function renderClarification(data) {
       <span style="color:#2B6CB0;font-weight:600;white-space:nowrap">${escapeHtml(d.produktas || '—')}</span>
       <span style="color:#6e6e73;white-space:nowrap">krovimas: <strong>${escapeHtml(d.krovimo_data || '—')}</strong></span>
       <span style="color:#8e8e93;font-style:italic;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escapeHtml(d.komentaras || '')}">${d.komentaras ? '"' + escapeHtml(d.komentaras) + '"' : '— komentaro nėra —'}</span>
-      <button class="clarif-btn" onclick="openEditOrder('${d.seka}')" style="margin-left:auto;background:#5C7C28">✏️ Redaguoti</button>
+      <button class="clarif-btn" onclick="openEditOrder('${d.seka}','${d.uid||""}')" style="margin-left:auto;background:#5C7C28">✏️ Redaguoti</button>
       <button class="clarif-btn" id="cb-${d.seka}" onclick="confirmOrder('${d.seka}', this)">Patvirtinti</button>
     </div>`).join('');
 }
@@ -2700,8 +2700,8 @@ function openNewOrder() {
   document.getElementById('of-uzsakovas').focus();
 }
 
-function openEditOrder(seka) {
-  const d = ALL_DATA.find(o => o.seka === String(seka));
+function openEditOrder(seka, uid) {
+  const d = (uid ? ALL_DATA.find(o => o.uid && o.uid === uid) : null) || ALL_DATA.find(o => o.seka === String(seka));
   if (!d) return;
   EDIT_SEKA = String(seka);
   EDIT_LOCATOR = { uid: d.uid || '', seka: d.seka, uzsakymo_data: d.uzsakymo_data };
