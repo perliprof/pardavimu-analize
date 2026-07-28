@@ -287,7 +287,9 @@ body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; co
 .cal-o-none      { background: #e8e8ed; border-left: 3px solid #aaa; }
 .cal-more { font-size: 9px; color: #8e8e93; margin-top: 3px; }
 .cal-empty { font-size: 11px; color: #d1d1d6; margin-top: 6px; }
-.cal-cell.out-of-month { background: #f5f5f7; opacity: 0.35; pointer-events: none; }
+.cal-cell.out-of-month { background: #f5f5f7; }
+.cal-cell.out-of-month .cal-day-num { color: #b0b0b8; }
+.cal-cell.out-of-month .cal-order { opacity: 0.6; }
 .cal-nav-btn { background: rgba(255,255,255,0.15); border: none; color: white; font-size: 22px; font-weight: 700; width: 36px; height: 36px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1; }
 .cal-nav-btn:hover { background: rgba(255,255,255,0.28); }
 .cal-sel { font-family: 'Montserrat', sans-serif; font-size: 14px; font-weight: 700; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 8px; padding: 5px 10px; cursor: pointer; outline: none; }
@@ -1941,15 +1943,15 @@ function renderCalendar(year, month) {
     const isPast   = ds < todayStr;
     const dow      = (d.getDay() + 6) % 7;
     const isWknd   = dow >= 5;
-    const holiday  = inMonth ? getLtHoliday(d) : null;
-    const orders   = inMonth ? (byDate[ds] || []).slice().sort((a,b) => {
+    const holiday  = getLtHoliday(d);
+    const orders   = (byDate[ds] || []).slice().sort((a,b) => {
       const aT = a.laikas || null;
       const bT = b.laikas || null;
       if (aT && bT) return aT.localeCompare(bT);
       if (aT) return -1;
       if (bT) return 1;
       return (a.produktas||'').localeCompare(b.produktas||'');
-    }) : [];
+    });
 
     const cls = ['cal-cell',
       !inMonth              ? 'out-of-month' : '',
@@ -1980,7 +1982,7 @@ function renderCalendar(year, month) {
     html += `<div class="${cls}">
       <div class="cal-day-num">${d.getDate()}</div>
       ${holiday ? `<div class="cal-holiday-label">${holiday}</div>` : ''}
-      ${inMonth && orders.length ? orderHtml + more : inMonth ? '<div class="cal-empty">—</div>' : ''}
+      ${orders.length ? orderHtml + more : inMonth ? '<div class="cal-empty">—</div>' : ''}
     </div>`;
   });
 
