@@ -464,7 +464,13 @@ body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; co
 
   <div class="kpi-row" id="kpi-row"></div>
 
-  <div id="warn-card" style="display:none;background:white;border-radius:14px;padding:0.75rem 1.25rem;margin-bottom:1.1rem;border-left:4px solid #8e8e93"></div>
+  <div id="warn-card" class="card" style="display:none;margin-bottom:1.1rem">
+    <div class="card-title" style="margin-bottom:0.6rem">
+      <span id="warn-chart-title">Metų palyginimas</span>
+      <span id="warn-chart-badge" style="font-size:12px;font-weight:700;padding:2px 10px;border-radius:20px;background:#f0f0f0;color:#444"></span>
+    </div>
+    <div style="height:160px;position:relative"><canvas id="yoy-chart"></canvas></div>
+  </div>
 
   <div id="clarif-card" style="display:none;background:white;border-radius:14px;border-left:4px solid #D97706;padding:0.9rem 1.25rem;margin-bottom:1.1rem">
     <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.65rem">
@@ -1326,47 +1332,71 @@ function renderMonthly(data) {
 }
 
 
-/* ── Ankstyvasis perspėjimas: einamasis mėnuo vs praėjusių m. tas pats mėnuo ── */
+/* ── Metų palyginimas: 12 mėnesių grafiku ── */
 function renderWarning(data) {
   const el = document.getElementById('warn-card');
-  const now = new Date();
-  const mm = String(now.getMonth()+1).padStart(2,'0');
-  const currMonthStr = viewYear + '-' + mm;
   const lyYear = String(parseInt(viewYear) - 1);
-  const lyMonthStr = lyYear + '-' + mm;
-  const monName = MONTH_LT[now.getMonth()];
+  const nowM   = new Date().getMonth(); // 0-based, einamasis mėnuo
 
-  const curr = FULL_DATA.filter(d => (d.uzsakymo_data||'').startsWith(currMonthStr));
-  const ly   = FULL_DATA.filter(d => (d.uzsakymo_data||'').startsWith(lyMonthStr));
+  const curr12 = Array.from({length:12}, (_,i) => {
+    const prefix = viewYear + '-' + String(i+1).padStart(2,'0');
+    let s = 0;
+    FULL_DATA.filter(d => (d.uzsakymo_data||'').startsWith(prefix)).forEach(d => { const v = calcM3(d); if(v) s += v; });
+    return Math.round(s);
+  });
+  const ly12 = Array.from({length:12}, (_,i) => {
+    const prefix = lyYear + '-' + String(i+1).padStart(2,'0');
+    let s = 0;
+    FULL_DATA.filter(d => (d.uzsakymo_data||'').startsWith(prefix)).forEach(d => { const v = calcM3(d); if(v) s += v; });
+    return Math.round(s);
+  });
 
-  let currM3 = 0; curr.forEach(d => { const v = calcM3(d); if(v) currM3 += v; });
-  let lyM3   = 0; ly.forEach(d   => { const v = calcM3(d); if(v) lyM3   += v; });
+  // Bendra šių metų ir praėjusių suma
+  const sumCurr = curr12.reduce((a,b)=>a+b,0);
+  const sumLy   = ly12.reduce((a,b)=>a+b,0);
+  const pctTotal = sumLy > 0 ? ((sumCurr - sumLy) / sumLy * 100) : null;
+  const arrow = pctTotal === null ? '' : pctTotal >= 0 ? '↑' : '↓';
+  const badgeColor = pctTotal === null ? '#8e8e93' : pctTotal >= 0 ? '#1A7A4A' : '#C0392B';
+  const badgeBg    = pctTotal === null ? '#f0f0f0' : pctTotal >= 0 ? '#e8f5ee' : '#fdecea';
 
-  if (!ly.length) {
-    el.style.borderLeftColor = '#8e8e93';
-    el.style.display = '';
-    el.innerHTML = `<span style="font-size:13px;font-weight:700;color:#0A0A0A">📅 ${monName} ${viewYear}: ${curr.length} užs. · ${currM3.toFixed(0)} m³</span>
-      <span style="font-size:12px;color:#8e8e93;margin-left:0.75rem">${lyYear} m. duomenų ${monName} nėra</span>`;
-    return;
+  document.getElementById('warn-chart-title').textContent = viewYear + ' vs ' + lyYear + ' · m³ pagal mėnesį';
+  const badge = document.getElementById('warn-chart-badge');
+  if (pctTotal !== null) {
+    badge.textContent = arrow + ' ' + Math.abs(pctTotal).toFixed(1) + '%';
+    badge.style.color = badgeColor;
+    badge.style.background = badgeBg;
   }
 
-  const pct = lyM3 > 0 ? ((currM3 - lyM3) / lyM3 * 100) : null;
-  const isBad  = pct !== null && pct < -15;
-  const isWarn = pct !== null && pct >= -15 && pct < -5;
-  const isGood = pct !== null && pct >= 0;
-  const color  = isBad ? '#C0392B' : isWarn ? '#D97706' : isGood ? '#1A7A4A' : '#0A0A0A';
-  const icon   = isBad ? '🔴' : isWarn ? '🟡' : '🟢';
-  const arrow  = pct === null ? '' : pct >= 0 ? '↑' : '↓';
+  // Dabartinio mėnesio paryškinimas
+  const currColors = curr12.map((_, i) =>
+    i === nowM ? 'rgba(92,124,40,0.9)' : 'rgba(92,124,40,0.45)'
+  );
+  const lyColors = ly12.map((_, i) =>
+    i === nowM ? 'rgba(180,180,180,0.9)' : 'rgba(180,180,180,0.5)'
+  );
 
-  el.style.borderLeftColor = color;
   el.style.display = '';
-  el.innerHTML = `<div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
-    <span style="font-size:15px">${icon}</span>
-    <span style="font-size:13px;font-weight:800;color:#0A0A0A">${monName} palyginimas · ${viewYear} vs ${lyYear}</span>
-    <span style="font-size:13px;color:#0A0A0A">${viewYear}: <b>${currM3.toFixed(0)} m³</b> (${curr.length} užs.)</span>
-    <span style="font-size:13px;color:#8e8e93">vs ${lyYear}: ${lyM3.toFixed(0)} m³ (${ly.length} užs.)</span>
-    ${pct !== null ? `<span style="font-size:14px;font-weight:800;color:${color}">${arrow} ${Math.abs(pct).toFixed(1)}%</span>` : ''}
-  </div>`;
+  mkChart('yoy-chart', {
+    type: 'bar',
+    data: {
+      labels: MONTH_LT,
+      datasets: [
+        { label: lyYear,   data: ly12,   backgroundColor: lyColors,   borderRadius: 3 },
+        { label: viewYear, data: curr12, backgroundColor: currColors, borderRadius: 3 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'top', labels: { font: { size: 11, family: "'Montserrat'" }, boxWidth: 12, padding: 12 } },
+        tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ' + ctx.parsed.y.toLocaleString('lt-LT') + ' m³' } }
+      },
+      scales: {
+        x: { ticks: { font: { size: 10, family: "'Montserrat'" } }, grid: { display: false } },
+        y: { ticks: { font: { size: 10, family: "'Montserrat'" }, callback: v => v.toLocaleString('lt-LT') }, grid: { color: 'rgba(0,0,0,0.04)' } }
+      }
+    }
+  });
 }
 
 /* ── Metinis vaizdas: stulpelinė diagrama pagal mėnesį su dviem serijomis ── */
