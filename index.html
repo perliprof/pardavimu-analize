@@ -668,6 +668,13 @@ body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; co
   <div class="ov-body" style="max-width:1500px">
     <div class="cust-stat-grid" id="customer-stats"></div>
     <div id="customer-crm"></div>
+    <div class="card" id="customer-yoy-card" style="display:none;margin-bottom:1.1rem">
+      <div class="card-title">
+        <span id="customer-yoy-title">Metų palyginimas</span>
+        <span id="customer-yoy-badge" style="font-size:12px;font-weight:700;padding:2px 10px;border-radius:20px;background:#f0f0f0;color:#444;margin-left:auto"></span>
+      </div>
+      <div style="height:160px;position:relative"><canvas id="customer-yoy-chart"></canvas></div>
+    </div>
     <div class="card">
       <div class="card-title">Visi užsakymai <span class="card-title-sub" id="customer-orders-count"></span></div>
       <div style="overflow-x:auto">
@@ -2437,6 +2444,61 @@ function openCustomer(name) {
       <td style="font-size:11px;color:#8e8e93;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escapeHtml(d.komentaras || '')}">${escapeHtml(d.komentaras || '')}</td>
     </tr>`;
   }).join('') || '<tr><td colspan="9" style="text-align:center;color:#8e8e93;padding:2rem">Nėra užsakymų šiais metais</td></tr>';
+
+  // 2025 vs 2026 grafikas šiam klientui
+  (function() {
+    const lyYear = String(parseInt(viewYear) - 1);
+    const nowM   = new Date().getMonth();
+    const allOrders = FULL_DATA.filter(d => d.uzsakovas === name);
+    const curr12 = Array.from({length:12}, (_,i) => {
+      const prefix = viewYear + '-' + String(i+1).padStart(2,'0');
+      let s = 0; allOrders.filter(d => (d.uzsakymo_data||'').startsWith(prefix)).forEach(d => { const v = calcM3(d); if(v) s += v; });
+      return Math.round(s);
+    });
+    const ly12 = Array.from({length:12}, (_,i) => {
+      const prefix = lyYear + '-' + String(i+1).padStart(2,'0');
+      let s = 0; allOrders.filter(d => (d.uzsakymo_data||'').startsWith(prefix)).forEach(d => { const v = calcM3(d); if(v) s += v; });
+      return Math.round(s);
+    });
+    const sumCurr = curr12.reduce((a,b)=>a+b,0);
+    const sumLy   = ly12.reduce((a,b)=>a+b,0);
+    const hasData = sumCurr > 0 || sumLy > 0;
+    const card = document.getElementById('customer-yoy-card');
+    card.style.display = hasData ? '' : 'none';
+    if (!hasData) return;
+    const pct = sumLy > 0 ? ((sumCurr - sumLy) / sumLy * 100) : null;
+    const badge = document.getElementById('customer-yoy-badge');
+    document.getElementById('customer-yoy-title').textContent = viewYear + ' vs ' + lyYear + ' · m³ pagal mėnesį';
+    if (pct !== null) {
+      const up = pct >= 0;
+      badge.textContent = (up ? '↑' : '↓') + ' ' + Math.abs(pct).toFixed(1) + '%';
+      badge.style.color = up ? '#1A7A4A' : '#C0392B';
+      badge.style.background = up ? '#e8f5ee' : '#fdecea';
+    }
+    const currColors = curr12.map((_,i) => i === nowM ? 'rgba(92,124,40,0.9)' : 'rgba(92,124,40,0.45)');
+    const lyColors   = ly12.map((_,i)   => i === nowM ? 'rgba(180,180,180,0.9)' : 'rgba(180,180,180,0.5)');
+    mkChart('customer-yoy-chart', {
+      type: 'bar',
+      data: {
+        labels: MONTH_LT,
+        datasets: [
+          { label: lyYear,   data: ly12,   backgroundColor: lyColors,   borderRadius: 3 },
+          { label: viewYear, data: curr12, backgroundColor: currColors, borderRadius: 3 }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'top', labels: { font: { size: 11, family: "'Montserrat'" }, boxWidth: 12, padding: 12 } },
+          tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ' + ctx.parsed.y.toLocaleString('lt-LT') + ' m³' } }
+        },
+        scales: {
+          x: { ticks: { font: { size: 10, family: "'Montserrat'" } }, grid: { display: false } },
+          y: { ticks: { font: { size: 10, family: "'Montserrat'" }, callback: v => v.toLocaleString('lt-LT') }, grid: { color: 'rgba(0,0,0,0.04)' } }
+        }
+      }
+    });
+  })();
 
   // CRM sekcija
   const crmEl = document.getElementById('customer-crm');
