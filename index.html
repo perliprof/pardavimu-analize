@@ -1992,7 +1992,10 @@ function renderCalendar(year, month) {
     const more = '';
 
     html += `<div class="${cls}">
-      <div class="cal-day-num">${d.getDate()}</div>
+      <div style="display:flex;align-items:baseline;gap:6px">
+        <div class="cal-day-num">${d.getDate()}</div>
+        ${orders.length ? `<div style="font-size:11px;font-weight:700;color:#8e8e93">${orders.length} krov.</div>` : ''}
+      </div>
       ${holiday ? `<div class="cal-holiday-label">${holiday}</div>` : ''}
       ${orders.length ? orderHtml + more : inMonth ? '<div class="cal-empty">—</div>' : ''}
     </div>`;
