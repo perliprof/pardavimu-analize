@@ -2968,8 +2968,12 @@ async function tryLoad() {
   _crmReady = loadCRM();
 
   // Fone kraunam šviežius duomenis
+  // Promise.race užtikrina timeout net kai WiFi proxy blokuoja AbortController
+  const _timeout = new Promise((_, rej) =>
+    setTimeout(() => rej(new Error('Serveris neatsakė (timeout) — bandykite dar kartą')), 15000)
+  );
   try {
-    const data = await loadData();
+    const data = await Promise.race([loadData(), _timeout]);
     localStorage.setItem('po_cache', JSON.stringify(data));
     document.getElementById('auth-gate').classList.remove('show');
     document.getElementById('loading').style.display = 'none';
