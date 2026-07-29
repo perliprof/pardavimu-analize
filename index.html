@@ -426,7 +426,8 @@ body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; co
 </head>
 <body>
 
-<a href="https://perliprof.github.io/" style="position:fixed;top:12px;left:12px;z-index:9999;background:rgba(0,0,0,0.35);color:#fff;font-family:inherit;font-size:13px;font-weight:700;padding:7px 14px;border-radius:10px;text-decoration:none;backdrop-filter:blur(6px)">← Hub</a>
+<a id="hub-link" href="https://perliprof.github.io/" style="position:fixed;top:12px;left:12px;z-index:9999;background:rgba(0,0,0,0.35);color:#fff;font-family:inherit;font-size:13px;font-weight:700;padding:7px 14px;border-radius:10px;text-decoration:none;backdrop-filter:blur(6px)">← Hub</a>
+<script>if(window.self!==window.top)document.getElementById('hub-link').style.display='none';</script>
 
 <div id="loading">Kraunama duomenys…</div>
 
