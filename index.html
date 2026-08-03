@@ -645,12 +645,12 @@ body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; co
     </div>
 
     <div class="card" id="crm-only-card" style="display:none">
-      <div class="card-title">📋 CRM — potencialūs ir kiti kontaktai
-        <span class="card-title-sub" id="crm-only-count"></span>
+      <div class="card-title">🆕 Niekada neužsakė
+        <span class="card-title-sub" id="crm-only-count">CRM kontaktai be užsakymų istorijos</span>
       </div>
       <div style="overflow-x:auto">
         <table class="data-table">
-          <thead><tr><th>#</th><th>Įmonė</th><th>Šalis</th><th>Sektorius</th><th>Produktas</th><th>Ryšys</th><th>Paskutinis kontaktas</th></tr></thead>
+          <thead><tr><th>#</th><th>Oficialus pavadinimas</th><th>Užsakymų pav.</th><th>Šalis</th><th>Sektorius</th><th>Produktas</th><th>Ryšys</th><th>Paskutinis kontaktas</th></tr></thead>
           <tbody id="crm-only-tbody"></tbody>
         </table>
       </div>
@@ -1723,19 +1723,22 @@ function applyCustomerFilter() { renderCustomerTable(ALL_CUSTOMERS); }
 
 function renderCRMOnly() {
   if (!CRM_DATA.length) return;
-  const orderNames = new Set(ALL_CUSTOMERS.map(r => r.name.toLowerCase().replace(/\s+/g, ' ')));
+  const orderNamesNorm = new Set(ALL_CUSTOMERS.map(r => _normN(r.name)));
   const onlyCRM = CRM_DATA.filter(c => {
-    const q = c.imone.toLowerCase().replace(/\s+/g, ' ');
-    return !orderNames.has(q) && ![...orderNames].some(n => n.includes(q) || q.includes(n));
+    // Laikome "niekada neužsakiusiu" tik jei nėra tikslaus trump arba imone sutapimo su užsakymais
+    const imoneN = _normN(c.imone);
+    const trumpN = c.trump ? _normN(c.trump) : '';
+    return !orderNamesNorm.has(imoneN) && !(trumpN && orderNamesNorm.has(trumpN));
   });
   const card = document.getElementById('crm-only-card');
   if (!onlyCRM.length) { card.style.display = 'none'; return; }
   card.style.display = '';
   document.getElementById('crm-only-count').textContent = onlyCRM.length + ' kontaktų';
   document.getElementById('crm-only-tbody').innerHTML = onlyCRM.map((c, i) => `
-    <tr class="crm-only-row" style="cursor:pointer" onclick="openCRMCard(${i + '_crm_only'})">
+    <tr class="crm-only-row" style="cursor:pointer">
       <td style="color:#8e8e93;font-size:11px">${i + 1}</td>
       <td style="font-weight:700">${escapeHtml(c.imone)}</td>
+      <td style="font-size:12px;color:#6e6e73">${escapeHtml(c.trump || '—')}</td>
       <td style="font-size:12px">${escapeHtml(c.salis)}</td>
       <td style="font-size:12px">${escapeHtml(c.sektorius)}</td>
       <td style="font-size:12px">${escapeHtml(c.produktas)}</td>
@@ -1778,7 +1781,7 @@ function renderActivity(data) {
     const ago = lastDt ? daysBetween(lastDt, now) : null;
 
     let status;
-    if (last60===0 && ago!==null && ago>60 && tot>=2) status='churned';
+    if (last60===0 && ago!==null && ago>60) status='churned';
     else if (prev60>0 && last60 < prev60*0.5) status='declining';
     else status='active';
 
