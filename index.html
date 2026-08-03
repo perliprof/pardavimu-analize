@@ -3030,8 +3030,13 @@ async function tryLoad() {
     const _tick = setInterval(() => {
       _sec++;
       const el = document.getElementById('loading');
-      if (el && el.style.display !== 'none') el.textContent = 'Kraunama duomenys… ' + _sec + 's';
-      if (_sec >= 20) clearInterval(_tick);
+      if (!el || el.style.display === 'none') { clearInterval(_tick); return; }
+      el.textContent = 'Kraunama duomenys… ' + _sec + 's';
+      if (_sec >= 20) {
+        clearInterval(_tick);
+        el.innerHTML = 'Nepavyko pakrauti per 20s.<br><br>' +
+          '<button onclick="tryLoad()" style="font-family:inherit;font-size:15px;padding:10px 24px;border:none;border-radius:10px;background:#5C7C28;color:#fff;cursor:pointer">↻ Bandyti dar kartą</button>';
+      }
     }, 1000);
     window._loadTick = _tick;
   }
