@@ -3013,11 +3013,13 @@ async function tryLoad() {
   const hadToken = !!localStorage.getItem('po_secret');
   if (!hadToken) { showAuthGate(''); return; }
 
+  // Auth gate nuimam iš karto — turim token, nereikia rodyti klaidos
+  document.getElementById('auth-gate').classList.remove('show');
+
   // Jei yra kešas — rodom akimirksniu, fone pakraunam naujus
   const cached = localStorage.getItem('po_cache');
   if (cached) {
     try {
-      document.getElementById('auth-gate').classList.remove('show');
       document.getElementById('loading').style.display = 'none';
       init(JSON.parse(cached));
     } catch (_) {}
