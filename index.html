@@ -3080,6 +3080,10 @@ document.getElementById('auth-token').addEventListener('keydown', e => {
   if (e.key === 'Enter') document.getElementById('auth-submit').click();
 });
 
+const CLIENTS_URL  = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQQ277gvKWxe3wt8BmchAhuiU-gOwrNLtXacsST0-n7Nds9i5eZ7kkLb5DUTRox4Q/pub?gid=690985131&single=true&output=csv';
+let CRM_DATA = [];
+let _crmReady = null; // Promise, išsisprendžia kai CRM užsikrauna
+
 // Jei hub'as perdavė tokenus per URL hash (#hub=key=val&key2=val2) — išsaugom ir valome hash
 (function() {
   const m = location.hash.match(/^#hub=(.+)/);
@@ -3123,10 +3127,6 @@ setInterval(refreshData, 5 * 60 * 1000);
    Skaito gamybos-lenta CSV (tas pats šaltinis)
    ══════════════════════════════════════════════ */
 const GAMYBA_URL   = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTRGeNdfu4A-DOF4jONXpTCKaSkE1uUpLXa94HHkNPw1mhIoWHNcKwhvoSL22Nh48DEV2DDMZ1KXprI/pub?output=csv';
-const CLIENTS_URL  = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQQ277gvKWxe3wt8BmchAhuiU-gOwrNLtXacsST0-n7Nds9i5eZ7kkLb5DUTRox4Q/pub?gid=690985131&single=true&output=csv';
-
-let CRM_DATA = [];
-let _crmReady = null; // Promise, išsisprendžia kai CRM užsikrauna
 
 async function loadCRM() {
   try {
