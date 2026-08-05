@@ -3021,6 +3021,8 @@ function showAuthGate(msg) {
   el.value = ''; el.focus();
 }
 async function tryLoad() {
+  // Išsaugome numatytą navigaciją prieš auth — kad nedingtų po prisijungimo
+  if (location.hash === '#gamyba') localStorage.setItem('pa_auto_open', 'gamyba');
   const hadToken = !!localStorage.getItem('po_secret');
   if (!hadToken) { showAuthGate(''); return; }
 
