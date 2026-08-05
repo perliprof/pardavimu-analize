@@ -2997,9 +2997,10 @@ function init(data) {
     (hiddenNoDate ? ' · ⚠️ ' + hiddenNoDate + ' užsak. be tvarkingos datos nerodoma suvestinėje' : '');
   document.getElementById('loading').style.display = 'none';
 
-  // Hub nuoroda: automatiškai atidaro Gamybos analizę
-  if (localStorage.getItem('pa_auto_open') === 'gamyba') {
+  // Hub nuoroda arba URL hash: automatiškai atidaro Gamybos analizę
+  if (localStorage.getItem('pa_auto_open') === 'gamyba' || location.hash === '#gamyba') {
     localStorage.removeItem('pa_auto_open');
+    history.replaceState(null, '', location.pathname + location.search);
     openGamyba();
   }
 }
