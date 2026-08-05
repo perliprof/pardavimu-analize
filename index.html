@@ -857,7 +857,7 @@ body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; co
 <!-- Gamyba overlay -->
 <div id="gamyba-overlay" style="display:none;position:fixed;inset:0;z-index:500;background:#f0f2f5;flex-direction:column;overflow-y:auto">
   <div class="ov-header" style="background:#7A3B00;gap:0.6rem;flex-wrap:wrap">
-    <button class="ov-back" onclick="closeGamyba()">← Atgal</button>
+    <button class="ov-back" id="gamyba-back-btn" onclick="closeGamyba()">← Atgal</button>
     <span class="ov-title">🏭 Gamybos analizė</span>
     <!-- Dešinis kampas: mode tab'ai + selektoriai -->
     <div style="display:flex;flex-direction:column;align-items:flex-end;gap:0.3rem;margin-left:auto">
@@ -3000,8 +3000,14 @@ function init(data) {
   // Hub nuoroda arba URL hash: automatiškai atidaro Gamybos analizę
   if (localStorage.getItem('pa_auto_open') === 'gamyba' || location.hash === '#gamyba') {
     localStorage.removeItem('pa_auto_open');
+    const standalone = location.hash === '#gamyba';
     history.replaceState(null, '', location.pathname + location.search);
     openGamyba();
+    if (standalone) {
+      // Savarankiškas režimas — slepiame "← Atgal" mygtuką, nėra kur grįžti
+      const btn = document.getElementById('gamyba-back-btn');
+      if (btn) btn.style.display = 'none';
+    }
   }
 }
 
