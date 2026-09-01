@@ -2408,7 +2408,7 @@ let CURRENT_CUSTOMER = null;
 function openCustomer(name) {
   CURRENT_CUSTOMER = name;
   const now = new Date();
-  const orders = ALL_DATA.filter(d => d.uzsakovas === name)
+  const orders = (FULL_DATA.length ? FULL_DATA : ALL_DATA).filter(d => d.uzsakovas === name)
     .sort((a, b) => (b.uzsakymo_data || '').localeCompare(a.uzsakymo_data || ''));
 
   const totalM3 = orders.reduce((s, d) => s + (calcM3(d) || 0), 0);
@@ -2423,7 +2423,7 @@ function openCustomer(name) {
   const avgLead = leads.length ? Math.round(leads.reduce((a, b) => a + b, 0) / leads.length) : null;
 
   document.getElementById('customer-title').textContent = name;
-  document.getElementById('customer-sub').textContent = viewYear + ' m.';
+  document.getElementById('customer-sub').textContent = 'visi metai';
   document.getElementById('customer-stats').innerHTML = `
     <div class="cust-stat"><div class="s-label">Užsakymų</div><div class="s-value">${orders.length}</div></div>
     <div class="cust-stat" style="border-color:#1A7A4A"><div class="s-label">m³ viso</div><div class="s-value" style="color:#1A7A4A">${totalM3.toLocaleString('lt-LT')}</div></div>
@@ -2432,7 +2432,7 @@ function openCustomer(name) {
     <div class="cust-stat"><div class="s-label">Paskutinis užs.</div><div class="s-value" style="font-size:16px">${last || '—'}</div><div class="s-sub">${ago !== null ? ago + ' d. atgal' : ''}</div></div>
     <div class="cust-stat"><div class="s-label">Vid. vykdymas</div><div class="s-value">${avgLead !== null ? avgLead + ' d.' : '—'}</div></div>
   `;
-  document.getElementById('customer-orders-count').textContent = orders.length + ' užsakymų · ' + viewYear + ' m.';
+  document.getElementById('customer-orders-count').textContent = orders.length + ' užsakymų · visi metai';
   document.getElementById('customer-orders-tbody').innerHTML = orders.map(d => {
     const od = isPastLoad(d);
     const clickable = WRITE_ENDPOINT ? ` onclick="openEditOrder('${d.seka}','${d.uid||""}')" style="cursor:pointer"` : '';
@@ -2948,7 +2948,7 @@ function renderAll(data) {
   renderProducts(data);
   renderStatus(data);
   setupFilters(data);
-  initCustomerTable(data);
+  initCustomerTable(FULL_DATA.length ? FULL_DATA : data);
   renderTable(data);
   renderActivity(data);
   renderClarification(data);
