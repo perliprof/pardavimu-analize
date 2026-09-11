@@ -484,13 +484,32 @@ body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; co
 
   <div class="card" style="margin-bottom:1.1rem">
     <div class="card-title">
-      <span id="monthly-title-text">Užsakymai pagal mėnesį</span>
+      <span>Laikotarpių palyginimas</span>
       <span>
-        <button class="mtoggle active" id="mt-count" onclick="setMonthlyMode('count')">Užsakymai</button>
-        <button class="mtoggle" id="mt-m3" onclick="setMonthlyMode('m3')">m³</button>
+        <button class="mtoggle active" id="cmp-count" onclick="setCmpMode('count')">Užsakymai</button>
+        <button class="mtoggle" id="cmp-m3" onclick="setCmpMode('m3')">m³</button>
       </span>
     </div>
-    <div class="chart-wrap" style="height:210px"><canvas id="monthly-chart"></canvas></div>
+    <div style="display:flex;flex-wrap:wrap;gap:0.5rem;align-items:center;margin-bottom:0.7rem">
+      <div style="display:flex;align-items:center;gap:0.35rem;font-size:13px">
+        <span style="color:#8e8e93">Nuo</span>
+        <input type="date" id="cmp-from" style="font-size:12px;padding:4px 7px;border:1px solid #d0d5dd;border-radius:7px;font-family:inherit" onchange="renderCompare()">
+        <span style="color:#8e8e93">iki</span>
+        <input type="date" id="cmp-to" style="font-size:12px;padding:4px 7px;border:1px solid #d0d5dd;border-radius:7px;font-family:inherit" onchange="renderCompare()">
+      </div>
+      <div style="display:flex;align-items:center;gap:0.5rem;margin-left:auto">
+        <div style="display:flex;align-items:center;gap:0.3rem;font-size:12px">
+          <span style="width:10px;height:10px;border-radius:2px;background:#2B6CB0;display:inline-block"></span>
+          <select id="cmp-year-a" style="font-size:12px;padding:3px 6px;border:1px solid #d0d5dd;border-radius:7px;font-family:inherit" onchange="renderCompare()"></select>
+        </div>
+        <div style="display:flex;align-items:center;gap:0.3rem;font-size:12px">
+          <span style="width:10px;height:10px;border-radius:2px;background:#A0AEC0;display:inline-block"></span>
+          <select id="cmp-year-b" style="font-size:12px;padding:3px 6px;border:1px solid #d0d5dd;border-radius:7px;font-family:inherit" onchange="renderCompare()"></select>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;gap:1rem;margin-bottom:0.7rem" id="cmp-stats"></div>
+    <div class="chart-wrap" style="height:170px"><canvas id="cmp-chart"></canvas></div>
   </div>
 
   <div class="card" style="margin-bottom:1.1rem">
@@ -1306,38 +1325,153 @@ function renderKPIs(data) {
   document.getElementById('hdr-total').textContent = `${data.length} užsakymų · ${viewYear} m.`;
 }
 
-/* ── Monthly chart ── */
-let MONTHLY_MODE = 'count';  // 'count' | 'm3'
-function setMonthlyMode(mode) {
-  MONTHLY_MODE = mode;
-  document.getElementById('mt-count').classList.toggle('active', mode === 'count');
-  document.getElementById('mt-m3').classList.toggle('active', mode === 'm3');
-  document.getElementById('monthly-title-text').textContent =
-    mode === 'm3' ? 'm³ pagal mėnesį' : 'Užsakymai pagal mėnesį';
-  renderMonthly(ALL_DATA);
+/* ── Period comparison chart ── */
+let CMP_MODE = 'count';  // 'count' | 'm3'
+
+function setCmpMode(mode) {
+  CMP_MODE = mode;
+  document.getElementById('cmp-count').classList.toggle('active', mode === 'count');
+  document.getElementById('cmp-m3').classList.toggle('active', mode === 'm3');
+  renderCompare();
 }
 
-function renderMonthly(data) {
-  const m3mode = MONTHLY_MODE === 'm3';
-  const vals = {};
-  data.forEach(d => {
-    const m = d.uzsakymo_data.substring(0, 7);
-    if (!/^\d{4}-\d{2}$/.test(m)) return;
-    if (m3mode) { const v = calcM3(d); vals[m] = (vals[m] || 0) + (v || 0); }
-    else vals[m] = (vals[m] || 0) + 1;
+function initCompareControls() {
+  // Populate year selectors from FULL_DATA
+  const years = [...new Set(FULL_DATA.map(d => (d.uzsakymo_data||'').slice(0,4)).filter(y => /^\d{4}$/.test(y)))].sort().reverse();
+  ['cmp-year-a','cmp-year-b'].forEach((id, i) => {
+    const sel = document.getElementById(id);
+    sel.innerHTML = years.map(y => `<option value="${y}">${y}</option>`).join('');
+    if (years[i] !== undefined) sel.value = years[i];
   });
-  const months = Object.keys(vals).sort().slice(-18);
-  const labels = months.map(m => MONTH_LT[parseInt(m.split('-')[1]) - 1] + " '" + m.slice(2, 4));
+  // Default date range: current month 1 → today
+  const now = new Date();
+  const mm = String(now.getMonth()+1).padStart(2,'0');
+  const dd = String(now.getDate()).padStart(2,'0');
+  const curYear = String(now.getFullYear());
+  document.getElementById('cmp-from').value = curYear + '-' + mm + '-01';
+  document.getElementById('cmp-to').value   = curYear + '-' + mm + '-' + dd;
+  renderCompare();
+}
 
-  mkChart('monthly-chart', {
+function renderCompare() {
+  const fromVal = document.getElementById('cmp-from').value; // YYYY-MM-DD
+  const toVal   = document.getElementById('cmp-to').value;
+  const yearA   = document.getElementById('cmp-year-a').value;
+  const yearB   = document.getElementById('cmp-year-b').value;
+  if (!fromVal || !toVal || !yearA || !yearB) return;
+
+  const fromMD = fromVal.slice(5); // MM-DD
+  const toMD   = toVal.slice(5);
+
+  const m3mode = CMP_MODE === 'm3';
+  const unit = m3mode ? ' m³' : ' užs.';
+
+  function filterPeriod(year) {
+    const f = year + '-' + fromMD;
+    const t = year + '-' + toMD;
+    return FULL_DATA.filter(d => {
+      const dt = (d.uzsakymo_data||'').slice(0,10);
+      return dt >= f && dt <= t;
+    });
+  }
+
+  const rowsA = filterPeriod(yearA);
+  const rowsB = filterPeriod(yearB);
+
+  function sumVal(rows) {
+    if (!m3mode) return rows.length;
+    return rows.reduce((s,d) => { const v = calcM3(d); return s + (v||0); }, 0);
+  }
+
+  const valA = sumVal(rowsA);
+  const valB = sumVal(rowsB);
+  const pct = valB > 0 ? ((valA - valB) / valB * 100) : null;
+  const arrow = pct === null ? '' : pct >= 0 ? '↑' : '↓';
+  const pctColor = pct === null ? '#8e8e93' : pct >= 0 ? '#1A7A4A' : '#C0392B';
+
+  // Stats
+  const statsEl = document.getElementById('cmp-stats');
+  const fmtVal = v => m3mode ? Math.round(v).toLocaleString('lt-LT') + ' m³' : v + ' užs.';
+  const fromDisp = fromMD.replace('-','.');
+  const toDisp   = toMD.replace('-','.');
+  statsEl.innerHTML = `
+    <div style="flex:1;background:#EBF4FF;border-radius:9px;padding:10px 14px">
+      <div style="font-size:11px;color:#2B6CB0;font-weight:700;margin-bottom:2px">${yearA} · ${fromDisp}–${toDisp}</div>
+      <div style="font-size:22px;font-weight:800;color:#1A365D">${fmtVal(valA)}</div>
+      <div style="font-size:11px;color:#8e8e93">${rowsA.length} užsakymų</div>
+    </div>
+    <div style="flex:1;background:#F5F5F7;border-radius:9px;padding:10px 14px">
+      <div style="font-size:11px;color:#6e6e73;font-weight:700;margin-bottom:2px">${yearB} · ${fromDisp}–${toDisp}</div>
+      <div style="font-size:22px;font-weight:800;color:#3a3a3c">${fmtVal(valB)}</div>
+      <div style="font-size:11px;color:#8e8e93">${rowsB.length} užsakymų</div>
+    </div>
+    ${pct !== null ? `<div style="display:flex;align-items:center;padding:10px 14px;font-size:18px;font-weight:800;color:${pctColor}">${arrow} ${Math.abs(pct).toFixed(1)}%</div>` : ''}
+  `;
+
+  // Build day-by-day labels between fromMD and toMD (same calendar days)
+  function daysInRange(year) {
+    const f = new Date(year + '-' + fromMD);
+    const t = new Date(year + '-' + toMD);
+    const days = [];
+    for (let d = new Date(f); d <= t; d.setDate(d.getDate()+1)) {
+      days.push(d.toISOString().slice(0,10));
+    }
+    return days;
+  }
+
+  const daysA = daysInRange(yearA);
+  const daysB = daysInRange(yearB);
+  const dayCount = Math.max(daysA.length, daysB.length);
+
+  // If range > 31 days, show weekly buckets; if ≤ 31 show daily
+  let labels, dataA, dataB;
+  if (dayCount <= 31) {
+    labels = daysA.map(d => d.slice(8) + '.' + d.slice(5,7));
+    const mapA = {}; rowsA.forEach(d => { const k=d.uzsakymo_data.slice(0,10); mapA[k]=(mapA[k]||0)+(m3mode?(calcM3(d)||0):1); });
+    const mapB = {}; rowsB.forEach(d => { const k=d.uzsakymo_data.slice(0,10); mapB[k]=(mapB[k]||0)+(m3mode?(calcM3(d)||0):1); });
+    dataA = daysA.map(d => Math.round(mapA[d]||0));
+    dataB = daysB.map(d => {
+      const bd = daysB[daysA.indexOf(d)] || d.replace(yearA, yearB);
+      return Math.round(mapB[bd]||0);
+    });
+    // Pair by index: day 1 vs day 1, etc.
+    dataA = daysA.map(d => Math.round(mapA[d]||0));
+    dataB = daysB.map((d,i) => Math.round(mapB[d]||0));
+  } else {
+    // Weekly: group by week number relative to start
+    const weekLabel = (days, map) => {
+      const weeks = []; let wSum = 0; let wLabel = '';
+      days.forEach((d, i) => {
+        if (i % 7 === 0) { if (i > 0) { weeks.push({ l: wLabel, v: wSum }); wSum = 0; } wLabel = d.slice(8)+'.'+d.slice(5,7); }
+        wSum += map[d] || 0;
+        if (i === days.length-1) weeks.push({ l: wLabel, v: Math.round(wSum) });
+      });
+      return weeks;
+    };
+    const mapA = {}; rowsA.forEach(d => { const k=d.uzsakymo_data.slice(0,10); mapA[k]=(mapA[k]||0)+(m3mode?(calcM3(d)||0):1); });
+    const mapB = {}; rowsB.forEach(d => { const k=d.uzsakymo_data.slice(0,10); mapB[k]=(mapB[k]||0)+(m3mode?(calcM3(d)||0):1); });
+    const wA = weekLabel(daysA, mapA), wB = weekLabel(daysB, mapB);
+    const wLen = Math.max(wA.length, wB.length);
+    labels = Array.from({length: wLen}, (_,i) => (wA[i]||{l:''}).l || (wB[i]||{l:''}).l);
+    dataA = Array.from({length: wLen}, (_,i) => (wA[i]||{v:0}).v);
+    dataB = Array.from({length: wLen}, (_,i) => (wB[i]||{v:0}).v);
+  }
+
+  mkChart('cmp-chart', {
     type: 'bar',
     data: {
       labels,
-      datasets: [{ data: months.map(m => Math.round(vals[m])), backgroundColor: 'rgba(43,108,176,0.75)', borderColor: '#2B6CB0', borderWidth: 1, borderRadius: 3 }]
+      datasets: [
+        { label: yearA, data: dataA, backgroundColor: 'rgba(43,108,176,0.8)', borderColor: '#2B6CB0', borderWidth: 1, borderRadius: 3 },
+        { label: yearB, data: dataB, backgroundColor: 'rgba(160,174,192,0.7)', borderColor: '#A0AEC0', borderWidth: 1, borderRadius: 3 }
+      ]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ctx.parsed.y + (m3mode ? ' m³' : ' užs.') } } },
+      plugins: {
+        legend: { display: true, position: 'top', labels: { font: { size: 11, family: "'Montserrat'" }, boxWidth: 12, padding: 10 } },
+        tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ' + ctx.parsed.y + unit } }
+      },
       scales: {
         x: { ticks: { font: { size: 10, family: "'Montserrat'" } }, grid: { display: false } },
         y: { ticks: { font: { size: 10, family: "'Montserrat'" }, callback: v => m3mode ? v + ' m³' : v }, grid: { color: 'rgba(0,0,0,0.04)' } }
@@ -1345,6 +1479,9 @@ function renderMonthly(data) {
     }
   });
 }
+
+// Backward compat alias (called from renderAll)
+function renderMonthly(data) { /* replaced by renderCompare */ }
 
 
 /* ── Metų palyginimas: 12 mėnesių grafiku ── */
@@ -2943,7 +3080,7 @@ function renderAll(data) {
   renderKPIs(data);
   renderWarning(data);
   renderAnnualSales(data);
-  renderMonthly(data);
+  initCompareControls();
   renderCustomers(data);
   renderProducts(data);
   renderStatus(data);
