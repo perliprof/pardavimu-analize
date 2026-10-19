@@ -1804,7 +1804,21 @@ function renderCustomerTable(rows) {
     const agoCls = r.ago === null ? '' : r.ago <= 30 ? 'db-ok' : r.ago <= 90 ? 'db-warn' : 'db-alert';
     const agoHtml = r.ago !== null ? `<span class="days-badge ${agoCls}">${r.ago}d.</span>` : '—';
     const pendHtml = r.pending > 0 ? `<span style="font-weight:700;color:#C47A00">${r.pending}</span>` : `<span style="color:#c7c7cc">0</span>`;
-    const crm = findCRM(r.name);
+    const crm = r.crmRec || findCRM(r.name);
+    if (r.crmOnly) {
+      // CRM-tik eilutė — be užsakymų
+      return `<tr style="cursor:pointer;opacity:0.6" onclick="openCRMCardDirect(${JSON.stringify(r.crmRec)})">
+        <td style="color:#8e8e93;font-size:11px">${i + 1}</td>
+        <td style="font-weight:700;color:#6e6e73" class="clickable-name">${escapeHtml(r.name)}<span class="crm-badge">CRM</span></td>
+        <td style="font-size:12px;color:#6e6e73">${escapeHtml(crm ? crm.salis : '—')}</td>
+        <td style="font-size:12px;color:#c7c7cc">—</td>
+        <td style="font-size:12px;color:#c7c7cc">—</td>
+        <td style="color:#c7c7cc">—</td>
+        <td style="white-space:nowrap;color:#c7c7cc"><span style="font-size:13px">0 užs.</span></td>
+        <td style="font-size:11px;color:#6e6e73;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escapeHtml(r.products)}">${escapeHtml(r.products || '—')}</td>
+        <td style="color:#c7c7cc">—</td>
+      </tr>`;
+    }
     return `<tr style="cursor:pointer" onclick="openCustomer('${jsAttr(r.name)}')">
       <td style="color:#8e8e93;font-size:11px">${i + 1}</td>
       <td style="font-weight:700" class="clickable-name">${escapeHtml(r.name)}${crm ? '<span class="crm-badge">CRM</span>' : ''}</td>
@@ -1891,10 +1905,28 @@ function renderCRMOnly() {
 
 function initCustomerTable(data) {
   ALL_CUSTOMERS = buildCustomerRows(data);
-  // Default: sort by last order desc
+
+  // Pridėti CRM-tik klientus (be užsakymų)
+  if (CRM_DATA.length) {
+    const orderNamesNorm = new Set(ALL_CUSTOMERS.map(r => _normN(r.name)));
+    const crmOnly = CRM_DATA.filter(c => {
+      const imoneN = _normN(c.imone);
+      const trumpN = c.trump ? _normN(c.trump) : '';
+      return !orderNamesNorm.has(imoneN) && !(trumpN && orderNamesNorm.has(trumpN));
+    });
+    crmOnly.forEach(c => {
+      ALL_CUSTOMERS.push({
+        name: c.imone, first: null, last: null, ago: null,
+        count: 0, products: c.produktas || '', pending: 0, pendingOrders: [], custM3: 0,
+        crmOnly: true, crmRec: c
+      });
+    });
+  }
+
+  // Default: užsakovai su užsakymais pirma (pagal paskutinį), tada CRM-tik
   ALL_CUSTOMERS.sort((a, b) => {
-    if (!a.last) return 1;
-    if (!b.last) return -1;
+    if (!!a.last !== !!b.last) return a.last ? -1 : 1;
+    if (!a.last && !b.last) return a.name.localeCompare(b.name);
     return b.last.localeCompare(a.last);
   });
   renderCustomerTable(ALL_CUSTOMERS);
@@ -3315,9 +3347,14 @@ async function loadCRM() {
       nutarta:  (iNutarta >= 0 ? r[iNutarta] : '') || '',
     }));
   } catch(e) { console.warn('CRM load failed', e); }
-  // Jei Klientai overlay atidarytas ir CRM sėkmingai užkrautas — perpiešiam šalių grafiką
+  // Jei CRM užkrautas — atnaujinti klientų lentelę (pridėti CRM-tik klientus)
+  if (CRM_DATA.length && (FULL_DATA.length || ALL_DATA.length)) {
+    initCustomerTable(FULL_DATA.length ? FULL_DATA : ALL_DATA);
+  }
+  // Jei Klientai overlay atidarytas — perpiešiam šalių grafiką ir CRM-only
   if (CRM_DATA.length && document.getElementById('clients-overlay')?.classList.contains('open')) {
     renderSalisChart(_salisMode);
+    renderCRMOnly();
   }
 }
 
