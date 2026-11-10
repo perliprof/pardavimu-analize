@@ -2438,6 +2438,7 @@ function renderWeek() {
           <div style="font-size:20px;font-weight:700;color:#0A0A0A">${escapeHtml(o.uzsakovas || '—')}${m3v ? `<span style="font-weight:600;color:#1A7A4A;margin-left:4px">${fmtM3(m3v)} m³</span>` : ''}</div>
           ${o.uzsakymo_nr ? `<div style="font-size:20px;color:#111;margin-top:1px">${escapeHtml(o.uzsakymo_nr)}</div>` : ''}
           ${o.auto_info ? `<div style="font-size:20px;color:#111;font-weight:600;margin-top:1px">${escapeHtml(o.auto_info)}</div>` : ''}
+          ${o.komentaras ? `<div style="font-size:18px;color:#5C7C28;margin-top:3px;font-style:italic">${escapeHtml(o.komentaras)}</div>` : ''}
           <div class="wk-o-meta" style="margin-top:3px">${badge(o.busena)}${o.transportas ? ' · <span style="font-size:20px">' + escapeHtml(o.transportas) + '</span>' : ''}</div>
         </div>`;
       }).join('') : '<div class="wk-col-empty">—</div>';
